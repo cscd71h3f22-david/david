@@ -1,18 +1,21 @@
 import { ethers } from "ethers";
 import { getTestnetProvider, MAX_BLOCKS_READ } from "./constants";
 
+
 // TESTS
 import testAbi from "./abi.json";
 
 export class Task {
   events: Event[];
-  contract: any;
-  latestBlock: number;
-  abi: any;
+  contract: ethers.Contract;
 
-  constructor(contractAddr: any, abi: any, provider: any, latestBlock: number) {
+  constructor(
+    contractAddr: string, 
+    public abi: ethers.ContractInterface, 
+    provider: ethers.providers.Provider, 
+    public latestBlock: number
+  ) {
     this.contract = new ethers.Contract(contractAddr, abi, provider);
-    this.latestBlock = latestBlock;
     this.events = [];
   }
 
