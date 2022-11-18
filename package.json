@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": ["./dist"],
+  "files": [
+    "./dist"
+  ],
   "types": "dist/index.d.ts",
   "main": "./dist/index.js",
   "repository": {
@@ -21,5 +23,8 @@
   "homepage": "https://github.com/CSCD71/david#readme",
   "devDependencies": {
     "typescript": "^4.9.3"
+  },
+  "dependencies": {
+    "ethers": "^5.7.2"
   }
 }
