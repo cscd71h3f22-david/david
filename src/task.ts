@@ -1,16 +1,30 @@
 import { ethers } from "ethers";
-import { getTestnetProvider, MAX_BLOCKS_READ } from "./constants";
+import {  address, MAX_BLOCKS_READ } from "./constants";
+
+interface TaskConfig {
+  contractAddr: address;
+  abi: ethers.ContractInterface;
+  provider: ethers.providers.Provider;
+  latestBlock: number;
+}
 
 export class Task {
-  events: Event[];
-  contract: ethers.Contract;
+  public events: Event[];
+  public contract: ethers.Contract;
+  public abi: ethers.ContractInterface;
+  public provider: ethers.providers.Provider;
+  public latestBlock: number;
 
-  constructor(
-    contractAddr: string, 
-    public abi: ethers.ContractInterface, 
-    provider: ethers.providers.Provider, 
-    public latestBlock: number
-  ) {
+  constructor({
+    contractAddr, 
+    abi, 
+    provider, 
+    latestBlock
+  }: TaskConfig) {
+    this.latestBlock = latestBlock;
+    this.abi = abi; 
+    this.provider = provider;
+
     this.contract = new ethers.Contract(contractAddr, abi, provider);
     this.events = [];
   }
@@ -51,7 +65,7 @@ export class Task {
     // Start listening to the blockchain
     let startingQueryBlock = this.latestBlock;
     let latestBlock = Math.min(
-      await getTestnetProvider().getBlockNumber(),
+      await this.contract.provider.getBlockNumber(),
       startingQueryBlock + MAX_BLOCKS_READ
     );
     console.log(`reading from ${startingQueryBlock} to ${latestBlock}`);
