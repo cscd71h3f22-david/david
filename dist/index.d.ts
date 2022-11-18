@@ -2,7 +2,8 @@ export declare class Task {
     events: Event[];
     contract: any;
     latestBlock: number;
-    constructor(contract: any, latestBlock: number);
+    abi: any;
+    constructor(contractAddr: any, abi: any, provider: any, latestBlock: number);
     addEvent(event: Event): void;
     handleEvent(event: Event, startingQueryBlock: number, latestBlock: number): Promise<void>;
     queryChain: () => Promise<void>;

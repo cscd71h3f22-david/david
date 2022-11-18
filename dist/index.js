@@ -18,7 +18,7 @@ const constants_1 = require("./constants");
 // TESTS
 const abi_json_1 = __importDefault(require("./abi.json"));
 class Task {
-    constructor(contract, latestBlock) {
+    constructor(contractAddr, abi, provider, latestBlock) {
         this.queryChain = () => __awaiter(this, void 0, void 0, function* () {
             // Start listening to the blockchain
             let startingQueryBlock = this.latestBlock;
@@ -32,20 +32,19 @@ class Task {
                     console.error("block query error", e);
                 }
             }));
+            this.latestBlock = latestBlock;
             // let exampleEvent = await this.contract.queryFilter(
             //   "TokenERC721Mint", // TODO: This will be replaced by the event name
             //   startingQueryBlock + 1,
             //   latestBlock
             // );
         });
-        this.contract = contract;
+        this.contract = new ethers_1.ethers.Contract(contractAddr, abi, provider);
         this.latestBlock = latestBlock;
-        let e = new Event("Deposit", new Date(), new Date(), 0, "");
-        console.log(e);
-        this.events = [e]; // TODO: remove hardcode -- for testing only
+        this.events = [];
     }
     addEvent(event) {
-        // TODO
+        this.events.push(event);
     }
     handleEvent(event, startingQueryBlock, latestBlock) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -82,6 +81,7 @@ class Event {
     }
 }
 exports.Event = Event;
-const testContract = new ethers_1.ethers.Contract("0xA3b81CF9bf1D18C85C1Bf25d15361CF9A788BA3b", abi_json_1.default, (0, constants_1.getTestnetProvider)());
-const newTask = new Task(testContract, 7973161);
+const newTask = new Task("0xA3b81CF9bf1D18C85C1Bf25d15361CF9A788BA3b", abi_json_1.default, (0, constants_1.getTestnetProvider)(), 7973272);
+let testEvent = new Event("Deposit", new Date(), new Date(), 0, "");
+newTask.addEvent(testEvent);
 newTask.startTask();

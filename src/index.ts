@@ -8,17 +8,16 @@ export class Task {
   events: Event[];
   contract: any;
   latestBlock: number;
+  abi: any;
 
-  constructor(contract: any, latestBlock: number) {
-    this.contract = contract;
+  constructor(contractAddr: any, abi: any, provider: any, latestBlock: number) {
+    this.contract = new ethers.Contract(contractAddr, abi, provider);
     this.latestBlock = latestBlock;
-    let e = new Event("Deposit", new Date(), new Date(), 0, "");
-    console.log(e);
-    this.events = [e]; // TODO: remove hardcode -- for testing only
+    this.events = [];
   }
 
   addEvent(event: Event) {
-    // TODO
+    this.events.push(event);
   }
 
   async handleEvent(
@@ -90,10 +89,12 @@ export class Event {
   ) {}
 }
 
-const testContract = new ethers.Contract(
+const newTask = new Task(
   "0xA3b81CF9bf1D18C85C1Bf25d15361CF9A788BA3b",
   testAbi,
-  getTestnetProvider()
+  getTestnetProvider(),
+  7973272
 );
-const newTask = new Task(testContract, 7973161);
+let testEvent = new Event("Deposit", new Date(), new Date(), 0, "");
+newTask.addEvent(testEvent);
 newTask.startTask();
