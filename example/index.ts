@@ -11,12 +11,8 @@ const newTask = new Task({
   abi: testAbi,
   provider: getTestnetProvider(),
   latestBlock: 7973272
-})
+});
+
 let testEvent = new Event("Deposit", new Date(), new Date(), 0, "");
 newTask.addEvent(testEvent);
-newTask.startTask();
-
-
-export {
-  Task, Event
-}
+newTask.start();

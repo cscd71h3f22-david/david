@@ -1,5 +1,7 @@
 import { ethers } from "ethers";
-import {  address, MAX_BLOCKS_READ } from "./constants";
+
+import { address, MAX_BLOCKS_READ } from "./constants";
+import {Event} from './event';
 
 interface TaskConfig {
   contractAddr: address;
@@ -27,6 +29,7 @@ export class Task {
 
     this.contract = new ethers.Contract(contractAddr, abi, provider);
     this.events = [];
+    provider.emit
   }
 
   addEvent(event: Event) {
@@ -86,18 +89,8 @@ export class Task {
     // );
   };
 
-  startTask() {
+  start() {
     // this.queryChain();
-    setInterval(this.queryChain.bind(this), 1000);
+    setInterval(this.queryChain, 1000);
   }
-}
-
-export class Event {
-  constructor(
-    public name: string,
-    public startTime: Date,
-    public endTime: Date,
-    public interval: number,
-    public desc: string
-  ) {}
 }
