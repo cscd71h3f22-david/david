@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { address, MAX_BLOCKS_READ } from "./constants";
-import {Event} from './event';
+import {Event, EventConfig} from './event';
 
 interface TaskConfig {
   contractAddr: address;
@@ -9,6 +9,9 @@ interface TaskConfig {
   provider: ethers.providers.Provider;
   latestBlock: number;
 }
+
+// The function to be executed when an event is triggered. 
+export type TaskFn = () => void;
 
 export class Task {
   public events: Event[];
@@ -29,10 +32,9 @@ export class Task {
 
     this.contract = new ethers.Contract(contractAddr, abi, provider);
     this.events = [];
-    provider.emit
   }
 
-  addEvent(event: Event) {
+  addEvent(event: EventConfig) {
     this.events.push(event);
   }
 

@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 
-import {Task, Event} from '../src';
+import David from '../src';
 import testAbi from './abi.json';
 
 export const getTestnetProvider = () =>
@@ -13,6 +13,8 @@ const newTask = new Task({
   latestBlock: 7973272
 });
 
-let testEvent = new Event("Deposit", new Date(), new Date(), 0, "");
-newTask.addEvent(testEvent);
+newTask.addEvent({
+  eventName: "Deposit"
+});
+
 newTask.start();
