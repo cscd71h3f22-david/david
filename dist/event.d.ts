@@ -4,5 +4,6 @@ export declare class Event {
     endTime: Date;
     interval: number;
     desc: string;
-    constructor(name: string, startTime: Date, endTime: Date, interval: number, desc: string);
+    handler: any;
+    constructor(name: string, startTime: Date, endTime: Date, interval: number, desc: string, handler: any);
 }

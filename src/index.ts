@@ -1,6 +1,4 @@
-import {Task} from './task';
-import { Event } from './event';
+import { Task } from "./task";
+import { Event } from "./event";
 
-export {
-  Task, Event
-}
+export { Task, Event };

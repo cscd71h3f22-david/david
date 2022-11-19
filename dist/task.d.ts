@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { address } from "./constants";
-import { Event } from './event';
+import { Event } from "./event";
 interface TaskConfig {
     contractAddr: address;
     abi: ethers.ContractInterface;
