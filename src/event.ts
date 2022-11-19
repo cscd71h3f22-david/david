@@ -4,6 +4,7 @@ export class Event {
     public startTime: Date,
     public endTime: Date,
     public interval: number,
-    public desc: string
+    public desc: string,
+    public handler: any
   ) {}
 }

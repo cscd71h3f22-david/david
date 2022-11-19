@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { address, MAX_BLOCKS_READ } from "./constants";
-import {Event} from './event';
+import { Event } from "./event";
 
 interface TaskConfig {
   contractAddr: address;
@@ -17,19 +17,14 @@ export class Task {
   public provider: ethers.providers.Provider;
   public latestBlock: number;
 
-  constructor({
-    contractAddr, 
-    abi, 
-    provider, 
-    latestBlock
-  }: TaskConfig) {
+  constructor({ contractAddr, abi, provider, latestBlock }: TaskConfig) {
     this.latestBlock = latestBlock;
-    this.abi = abi; 
+    this.abi = abi;
     this.provider = provider;
 
     this.contract = new ethers.Contract(contractAddr, abi, provider);
     this.events = [];
-    provider.emit
+    provider.emit;
   }
 
   addEvent(event: Event) {
@@ -51,16 +46,8 @@ export class Task {
       let eventData = queryEvent[i];
       // TODO: insert parsing of data here
       console.log("eventData", eventData);
-      /*
-        let amount = eventData.args[0];
-        let tokenIds = eventData.args[1];
-        let timestamp = eventData.args[2];
-        let account = eventData.args[3];
-        let tokenData = eventData.args[4];
-        let mediaUri = eventData.args[5];
-      */
 
-      // TODO: handle
+      await event.handler(eventData);
     }
   }
 
@@ -82,11 +69,6 @@ export class Task {
     });
 
     this.latestBlock = latestBlock;
-    // let exampleEvent = await this.contract.queryFilter(
-    //   "TokenERC721Mint", // TODO: This will be replaced by the event name
-    //   startingQueryBlock + 1,
-    //   latestBlock
-    // );
   };
 
   start() {

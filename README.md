@@ -2,4 +2,4 @@
 
 tsc --project tsconfig.json
 
-node ./dist/index.js 
+npx ts-node ./example/index.ts
