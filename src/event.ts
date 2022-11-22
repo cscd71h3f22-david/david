@@ -74,6 +74,7 @@ abstract class Event {
    * Registers the function to be executed onto corresponding event listeners. 
    * 
    * @param exec The function to be executed upon trigger.
+   * @returns UnregisterFn: A function to be called at this.endTime. 
    */
   protected abstract _register(exec: TaskFn): UnregisterFn;
 }
@@ -105,6 +106,7 @@ interface IntervalEventConfig extends EventConfigBase {
 
 class IntervalEvent extends Event {
   public readonly interval: number;
+  private intervalTimer: NodeJS.Timer | null = null;
 
   constructor({startTime, endTime, interval}: IntervalEventConfig) {
     super();
@@ -114,8 +116,20 @@ class IntervalEvent extends Event {
   }
 
   protected _register(exec: TaskFn): UnregisterFn {
-    const interval = setInterval(exec, this.interval); 
-    return () => clearInterval(interval);
+    let timeout: NodeJS.Timeout | null = null;
+    if (this.startTime) {
+      timeout = setTimeout(() => {
+        this.intervalTimer = setInterval(exec, this.interval);
+      }, this.timeUntilStart());
+    }
+    
+    return () => {
+      if (this.intervalTimer) {
+        clearInterval(this.intervalTimer);
+      } else if (timeout) {
+        clearTimeout(timeout);
+      }
+    }
   }
 }
 
@@ -135,11 +149,18 @@ class CronEvent extends Event {
     const cronTask = cron.schedule(this.cron, exec, {
       scheduled: !!this.startTime
     });
+    let timeout: NodeJS.Timeout;
     if (this.startTime) {
-      setTimeout(() => cronTask.start(), )
+      timeout = setTimeout(() => cronTask.start(), )
     }
 
-    return () => {}
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      } else {
+        cronTask.stop();
+      }
+    }
   }
 }
 
@@ -147,8 +168,22 @@ interface OnchainEventConfig extends EventConfigBase {
   eventName: string; 
   contract: ethers.Contract;
 }
-class OnchainEvent {
+class OnchainEvent extends Event {
 
+  public readonly contract: ethers.Contract;
+  public readonly eventName: string;
+
+  constructor({contract, eventName}: OnchainEventConfig) {
+    super();
+    this.contract = contract; 
+    this.eventName = eventName;
+  }
+
+  protected _register(exec: TaskFn): UnregisterFn {
+    return () => {
+
+    }
+  }
 }
 
 export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
@@ -156,7 +191,7 @@ export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfi
 type UnregisterFn = () => void;
 
 const events = {
-
+  OnceEvent, IntervalEvent, CronEvent, OnchainEvent
 }
 
 export default events;
