@@ -4,6 +4,8 @@ import { TaskFn } from "./task";
 
 
 type UnregisterFn = () => void;
+type EventTrigger = "once" | "interval" | "cron" | "onchain-event";
+type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
 
 interface EventConfigBase {
   startTime?: Date; 
@@ -14,6 +16,8 @@ interface EventConfigBase {
  * Contain the logic of when to call a task function.
  */
 export abstract class Event {
+  // TODO: Use cron instead of setTimeout for when the wait time is longer than 24 days
+  // https://stackoverflow.com/questions/53280186/how-long-can-nodejs-settimeout-wait
   protected _startTime?: Date;
   protected _endTime?: Date;
 
@@ -35,8 +39,7 @@ export abstract class Event {
     if (this._endTime) {
       setTimeout(() => {
         unregister();
-      }, this._endTime.getTime() - Date.now());
-      console.log('set time out')
+      }, this.timeUntilEnd());
     }
   }
 
@@ -98,13 +101,10 @@ export class EventChain {
   }
 }
 
+/**
+ * Different types of events
+ */
 export namespace events {
-  type EventTrigger = "once" | "interval" | "cron" | "onchain-event";
-  
-  
-  
-  type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
-  
   export class OnceEvent extends Event {
     constructor(config: OnceEventConfig) {
       super(config || {});

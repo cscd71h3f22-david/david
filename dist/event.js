@@ -24,8 +24,7 @@ class Event {
         if (this._endTime) {
             setTimeout(() => {
                 unregister();
-            }, this._endTime.getTime() - Date.now());
-            console.log('set time out');
+            }, this.timeUntilEnd());
         }
     }
     /**

@@ -25,7 +25,7 @@ const fundBContract = new ethers.Contract(
 
 /**
  * The following code demonstrates how to use david to automatically deposit to fund A 
- * on every Monday in the next 30 days, 
+ * on every Monday in the next 20 days, 
  *  and when someone voted on fund B.
  * 
  * Note fund A and B does not necessarily have to be on the same chain. 
@@ -38,9 +38,9 @@ const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {
   console.log('Deposited 100000 Wei to fund contract');
 });
 
-const everyMondayInTheNext30Days = new david.events.CronEvent({
+const everyMondayInTheNext20Days = new david.events.CronEvent({
   startTime: new Date(), 
-  //endTime: new Date(Date.now() + 30 * 24 * 3600 * 1000), 
+  endTime: new Date(Date.now() + 20 * 24 * 3600 * 1000), 
   cron: '* * * * mon'
 });
 
@@ -50,7 +50,7 @@ const someoneVotedOnFundB = new david.events.OnchainEvent({
 }); 
 
 dave.on(
-  everyMondayInTheNext30Days
+  everyMondayInTheNext20Days
     .and(someoneVotedOnFundB),
   depositToFundA
 );
