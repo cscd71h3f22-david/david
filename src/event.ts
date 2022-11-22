@@ -2,39 +2,41 @@ import { ethers } from "ethers";
 import cron from 'node-cron';
 import { TaskFn } from "./task";
 
-type EventTrigger = "once" | "interval" | "cron" | "onchain-event";
+
+type UnregisterFn = () => void;
 
 interface EventConfigBase {
   startTime?: Date; 
   endTime?: Date;
 }
 
-abstract class Event {
+/**
+ * Contain the logic of when to call a task function.
+ */
+export abstract class Event {
   protected _startTime?: Date;
   protected _endTime?: Date;
-  private _state: 'Created' | 'Registered' | 'Expired' = 'Created';
+
+  constructor(config: EventConfigBase) {
+    this._startTime = config.startTime;
+    this._endTime = config.endTime;
+  }
 
   /**
-   * Registers the function to be executed onto corresponding event listeners.
+   * Register the task function onto corresponding event listeners.
    * If endTime is set, auto un-registers the function upon endTime.
    * 
    * @param exec 
    */
   public register(exec: TaskFn) {
 
-    if (this.state !== 'Created') {
-      // Task has already been registered / expired
-      return;
-    }
-
     const unregister = this._register(exec);
-    this._state = 'Registered';
 
     if (this._endTime) {
       setTimeout(() => {
         unregister();
-        this._state = 'Expired';
       }, this._endTime.getTime() - Date.now());
+      console.log('set time out')
     }
   }
 
@@ -60,14 +62,15 @@ abstract class Event {
     return diff > 0 ? diff : 0;
   }
 
+  public and(event: Event): EventChain {
+    return new EventChain().and(this).and(event);
+  }
+
   public get startTime() {
     return this._startTime;
   }
   public get endTime() {
     return this._endTime;
-  }
-  public get state() {
-    return this._state;
   }
 
   /**
@@ -79,119 +82,136 @@ abstract class Event {
   protected abstract _register(exec: TaskFn): UnregisterFn;
 }
 
-type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
+/**
+ * Allows the user to chain events together using .or()
+ */
+export class EventChain {
+  public readonly events: Event[] = [];
 
-class OnceEvent extends Event {
-  constructor(config: OnceEventConfig) {
-    super();
-    if (config && config.startTime) {
-      this._startTime = config.startTime; 
-    }
-  }
+  constructor() {}
 
-  protected _register(exec: TaskFn): UnregisterFn {
-    if (this.startTime) {
-      setTimeout(exec, this.timeUntilStart())
-    } else {
-      exec();
-    }
-    
-    return () => {}
+  public and(event: Event): EventChain {
+
+    this.events.push(event);
+
+    return this;
   }
 }
 
-interface IntervalEventConfig extends EventConfigBase {
-  interval: number
-}
-
-class IntervalEvent extends Event {
-  public readonly interval: number;
-  private intervalTimer: NodeJS.Timer | null = null;
-
-  constructor({startTime, endTime, interval}: IntervalEventConfig) {
-    super();
-    this._startTime = startTime; 
-    this._endTime = endTime; 
-    this.interval = interval;
-  }
-
-  protected _register(exec: TaskFn): UnregisterFn {
-    let timeout: NodeJS.Timeout | null = null;
-    if (this.startTime) {
-      timeout = setTimeout(() => {
-        this.intervalTimer = setInterval(exec, this.interval);
-      }, this.timeUntilStart());
-    }
-    
-    return () => {
-      if (this.intervalTimer) {
-        clearInterval(this.intervalTimer);
-      } else if (timeout) {
-        clearTimeout(timeout);
+export namespace events {
+  type EventTrigger = "once" | "interval" | "cron" | "onchain-event";
+  
+  
+  
+  type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
+  
+  export class OnceEvent extends Event {
+    constructor(config: OnceEventConfig) {
+      super(config || {});
+      if (config && config.startTime) {
+        this._startTime = config.startTime; 
       }
     }
-  }
-}
-
-interface CronEventConfig extends EventConfigBase {
-  cron: string;
-}
-
-class CronEvent extends Event {
-  public readonly cron: string; 
-
-  constructor({startTime, endTime, cron}: CronEventConfig) {
-    super();
-    this.cron = cron;
-  }
-
-  protected _register(exec: TaskFn): UnregisterFn {
-    const cronTask = cron.schedule(this.cron, exec, {
-      scheduled: !!this.startTime
-    });
-    let timeout: NodeJS.Timeout;
-    if (this.startTime) {
-      timeout = setTimeout(() => cronTask.start(), )
-    }
-
-    return () => {
-      if (timeout) {
-        clearTimeout(timeout);
+  
+    protected _register(exec: TaskFn): UnregisterFn {
+      if (this.startTime) {
+        setTimeout(exec, this.timeUntilStart())
       } else {
-        cronTask.stop();
+        exec();
+      }
+      
+      return () => {}
+    }
+  }
+  
+  interface IntervalEventConfig extends EventConfigBase {
+    interval: number
+  }
+  
+  export class IntervalEvent extends Event {
+    public readonly interval: number;
+    private intervalTimer: NodeJS.Timer | null = null;
+  
+    constructor({startTime, endTime, interval}: IntervalEventConfig) {
+      super({startTime, endTime});
+      this._startTime = startTime; 
+      this._endTime = endTime; 
+      this.interval = interval;
+    }
+  
+    protected _register(exec: TaskFn): UnregisterFn {
+      let timeout: NodeJS.Timeout | null = null;
+      if (this.startTime) {
+        timeout = setTimeout(() => {
+          this.intervalTimer = setInterval(exec, this.interval);
+        }, this.timeUntilStart());
+      }
+      
+      return () => {
+        if (this.intervalTimer) {
+          clearInterval(this.intervalTimer);
+        } else if (timeout) {
+          clearTimeout(timeout);
+        }
       }
     }
   }
-}
-
-interface OnchainEventConfig extends EventConfigBase {
-  eventName: string; 
-  contract: ethers.Contract;
-}
-class OnchainEvent extends Event {
-
-  public readonly contract: ethers.Contract;
-  public readonly eventName: string;
-
-  constructor({contract, eventName}: OnchainEventConfig) {
-    super();
-    this.contract = contract; 
-    this.eventName = eventName;
+  
+  interface CronEventConfig extends EventConfigBase {
+    cron: string;
   }
-
-  protected _register(exec: TaskFn): UnregisterFn {
-    return () => {
-
+  
+  export class CronEvent extends Event {
+    public readonly cron: string; 
+  
+    constructor({startTime, endTime, cron}: CronEventConfig) {
+      super({startTime, endTime});
+      this.cron = cron;
+    }
+  
+    protected _register(exec: TaskFn): UnregisterFn {
+      const cronTask = cron.schedule(this.cron, exec, {
+        scheduled: !!this.startTime
+      });
+      let timeout: NodeJS.Timeout;
+      if (this.startTime) {
+        timeout = setTimeout(() => cronTask.start(), this.timeUntilStart());
+      }
+  
+      return () => {
+        if (timeout) {
+          clearTimeout(timeout);
+        } else {
+          cronTask.stop();
+        }
+      }
     }
   }
+  
+  interface OnchainEventConfig extends EventConfigBase {
+    eventName: string; 
+    contract: ethers.Contract;
+  }
+  export class OnchainEvent extends Event {
+  
+    public readonly contract: ethers.Contract;
+    public readonly eventName: string;
+  
+    constructor({contract, eventName, startTime, endTime}: OnchainEventConfig) {
+      super({startTime, endTime});
+      this.contract = contract; 
+      this.eventName = eventName;
+    }
+  
+    protected _register(exec: TaskFn): UnregisterFn {
+
+      this.contract.on(this.eventName, exec);
+
+      return () => {
+        this.contract.removeListener(this.eventName, exec);
+      }
+    }
+  }
+  
+  export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
 }
-
-export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
-
-type UnregisterFn = () => void;
-
-const events = {
-  OnceEvent, IntervalEvent, CronEvent, OnchainEvent
-}
-
-export default events;

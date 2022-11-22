@@ -1,7 +1,8 @@
-import {Task} from './task';
-import events from './event';
+import {tasks} from './task';
+import {events} from './event';
+import { David } from './david';
 
-const David = {
-  Task, events
+const david = {
+  tasks, events, David
 }
-export default David; 
+export default david; 
