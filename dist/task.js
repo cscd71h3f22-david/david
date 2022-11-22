@@ -51,15 +51,7 @@ class Task {
                 let eventData = queryEvent[i];
                 // TODO: insert parsing of data here
                 console.log("eventData", eventData);
-                /*
-                  let amount = eventData.args[0];
-                  let tokenIds = eventData.args[1];
-                  let timestamp = eventData.args[2];
-                  let account = eventData.args[3];
-                  let tokenData = eventData.args[4];
-                  let mediaUri = eventData.args[5];
-                */
-                // TODO: handle
+                yield event.handler(eventData);
             }
         });
     }
