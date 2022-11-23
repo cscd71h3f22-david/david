@@ -21,6 +21,10 @@ export class David {
   private tasks: tasks.Task[] = [];
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
 
+  /**
+   * Creates an instance of David
+   * @param config configuration settings for David
+   */
   constructor(config?: DavidConfig) {
     if (config) {
       const {webhook} = config;
@@ -28,7 +32,11 @@ export class David {
     }
   }
 
-  public start() {
+  /**
+   * Registers events and starts the web servers for handling
+   * webhooks.
+   */
+  public start(): void {
     if (this.webhook) {
       this.webhookServer = new WebhookServer(this.webhook);
     }
@@ -46,7 +54,13 @@ export class David {
     console.log('David started!')
   }
 
-  public on(eventOrChain: Event | EventChain, task: tasks.Task) {
+  /**
+   * Adds event and task to David
+   * @param eventOrChain Event associated with the task
+   * @param task Task to run when this event is emitted
+   * @returns instance of David
+   */
+  public on(eventOrChain: Event | EventChain, task: tasks.Task): David {
     if (eventOrChain instanceof Event) {
       // First parameter is an event
       let event = eventOrChain;

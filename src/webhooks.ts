@@ -6,6 +6,7 @@ export interface WebhookConfig {
     /**
      * Port of the webhook listener server.
      * Defaults to 5000.
+     * 
      */
     port?: number;
     apiKey: string;
@@ -17,6 +18,10 @@ export class WebhookServer {
     private readonly app: Express;
     private webhookEventToTask: Map<string, TaskFn> = new Map();
 
+    /**
+     * 
+     * @param param0 Webhook Configurations
+     */
     constructor({apiKey, port}: WebhookConfig) {
         this.apiKey = apiKey;
         this.port = port ?? 5000;
