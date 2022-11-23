@@ -213,35 +213,34 @@ export namespace events {
       }
     }
   }
+
+  interface WebhookEventConfig extends EventConfigBase {
+    eventName: string;
+  }
+  
+  export class WebhookEvent extends Event {
+    public webhookServer: WebhookServer | undefined = undefined;
+    public readonly name: string;
+    constructor({eventName, startTime, endTime}: WebhookEventConfig) {
+      super({startTime, endTime});
+      this.name = eventName;
+    }
+  
+    public setWebhookServer(webhookServer: WebhookServer) {
+      this.webhookServer = webhookServer;
+    }
+  
+    protected _register(exec: TaskFn): UnregisterFn {
+      if (!this.webhookServer) {
+        throw 'Webhook Server not initialized yet.'
+      }
+      this.webhookServer.registerEvent(this.name, exec)
+      return () => {
+        (<WebhookServer>this.webhookServer).removeEvent(this.name);
+      }
+    }
+  }
+  
   
   export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
 }
-
-interface WebhookEventConfig extends EventConfigBase {
-  webhook: boolean;
-  eventName: string;
-}
-
-export class WebhookEvent extends Event {
-  public webhookServer: WebhookServer | undefined = undefined;
-  public readonly name: string;
-  constructor({eventName, startTime, endTime}: WebhookEventConfig) {
-    super({startTime, endTime});
-    this.name = eventName;
-  }
-
-  public setWebhookServer(webhookServer: WebhookServer) {
-    this.webhookServer = webhookServer;
-  }
-
-  protected _register(exec: TaskFn): UnregisterFn {
-    if (!this.webhookServer) {
-      throw 'Webhook Server not initialized yet.'
-    }
-    this.webhookServer.registerEvent(this.name, exec)
-    return () => {
-      (<WebhookServer>this.webhookServer).removeEvent(this.name);
-    }
-  }
-}
-

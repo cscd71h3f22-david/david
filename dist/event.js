@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.events = exports.EventChain = exports.Event = void 0;
+exports.WebhookEvent = exports.events = exports.EventChain = exports.Event = void 0;
 const node_cron_1 = __importDefault(require("node-cron"));
 /**
  * Contain the logic of when to call a task function.
@@ -71,6 +71,9 @@ class EventChain {
     }
 }
 exports.EventChain = EventChain;
+/**
+ * Different types of events
+ */
 var events;
 (function (events) {
     class OnceEvent extends Event {
@@ -156,3 +159,23 @@ var events;
     }
     events.OnchainEvent = OnchainEvent;
 })(events = exports.events || (exports.events = {}));
+class WebhookEvent extends Event {
+    constructor({ eventName, startTime, endTime }) {
+        super({ startTime, endTime });
+        this.webhookServer = undefined;
+        this.name = eventName;
+    }
+    setWebhookServer(webhookServer) {
+        this.webhookServer = webhookServer;
+    }
+    _register(exec) {
+        if (!this.webhookServer) {
+            throw 'Webhook Server not initialized yet.';
+        }
+        this.webhookServer.registerEvent(this.name, exec);
+        return () => {
+            this.webhookServer.removeEvent(this.name);
+        };
+    }
+}
+exports.WebhookEvent = WebhookEvent;

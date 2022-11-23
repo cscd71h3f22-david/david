@@ -1,4 +1,4 @@
-import { EventChain, Event, WebhookEvent } from './event';
+import { EventChain, Event, events } from './event';
 
 import { tasks } from './task';
 import { WebhookServer, WebhookConfig } from './webhooks';
@@ -33,7 +33,7 @@ export class David {
       this.webhookServer = new WebhookServer(this.webhook);
     }
     for (const [event, tasks] of this.eventToTasks) {
-      if (this.webhook && event instanceof WebhookEvent) {
+      if (this.webhook && event instanceof events.WebhookEvent) {
         event.setWebhookServer(<WebhookServer>this.webhookServer);
       }
       for (const task of tasks) {

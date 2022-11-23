@@ -1,6 +1,8 @@
 import { ethers } from "ethers";
 import { TaskFn } from "./task";
+import { WebhookServer } from "./webhooks";
 type UnregisterFn = () => void;
+type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
 interface EventConfigBase {
     startTime?: Date;
     endTime?: Date;
@@ -46,8 +48,10 @@ export declare class EventChain {
     constructor();
     and(event: Event): EventChain;
 }
+/**
+ * Different types of events
+ */
 export declare namespace events {
-    type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
     export class OnceEvent extends Event {
         constructor(config: OnceEventConfig);
         protected _register(exec: TaskFn): UnregisterFn;
@@ -81,5 +85,16 @@ export declare namespace events {
     }
     export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
     export {};
+}
+interface WebhookEventConfig extends EventConfigBase {
+    webhook: boolean;
+    eventName: string;
+}
+export declare class WebhookEvent extends Event {
+    webhookServer: WebhookServer | undefined;
+    readonly name: string;
+    constructor({ eventName, startTime, endTime }: WebhookEventConfig);
+    setWebhookServer(webhookServer: WebhookServer): void;
+    protected _register(exec: TaskFn): UnregisterFn;
 }
 export {};

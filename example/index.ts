@@ -31,7 +31,10 @@ const fundBContract = new ethers.Contract(
  * Note fund A and B does not necessarily have to be on the same chain. 
  */
 
-const dave = new david.David();
+const dave = new david.David({webhook: {
+  port: 8888,
+  apiKey: "garongschickchen"
+}});
 
 const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {
   // Deposit to fund A. 
@@ -47,12 +50,26 @@ const everyMondayInTheNext20Days = new david.events.CronEvent({
 const someoneVotedOnFundB = new david.events.OnchainEvent({
   contract: fundBContract,
   eventName: 'Vote'
-}); 
+});
+
+const coolReference = new david.events.WebhookEvent({
+  eventName: 'dapptechnologyinc'
+});
+
+const coolReference2 = new david.tasks.Task("Hi York", () => {
+  console.log('Hi Clara');
+  console.log('Hi Thierry');
+  console.log('Hi David');
+});
 
 dave.on(
   everyMondayInTheNext20Days
     .and(someoneVotedOnFundB),
   depositToFundA
 );
+dave.on(
+  coolReference,
+  coolReference2
+)
 
 dave.start();

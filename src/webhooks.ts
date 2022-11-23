@@ -25,21 +25,28 @@ export class WebhookServer {
 
     public buildApp() {
         const app = express();
-        app.get('/trigger', (req: express.Request, res: express.Response) => {
-            if (!(req.query.id instanceof String && req.query.apikey instanceof String)) {
-                res.status(400).send('Invalid input.')
-            }
+        app.get('/', (_, res: express.Response) => {
+            res.status(200).send('Welcome to David, our automation server! Use /api/trigger/id=???&apikey=??? to invoke webhooks!')
+        });
+        app.get('/api/trigger', (req: express.Request, res: express.Response) => {
+            console.log(req.query.id, req.query.apikey)
+            // if (!(req.query.id instanceof String && req.query.apikey instanceof String)) {
+            //     res.status(400).send('Invalid input.');
+            //     return;
+            // }
             if (req.query.apikey !== this.apiKey) {
                 res.status(403).send('Unauthorized.');
+                return;
             }
             const tasks = this.getTasks();
             const eventId = <string>req.query.id;
             if (!tasks.has(eventId)) {
                 res.status(404).send('Event Id does not exist.');
+                return;
             }
             const task = <TaskFn>tasks.get(eventId);
             task();
-            res.status(200).send('Event ' + req.query.id + ' triggered!');
+            res.sendStatus(200);
         });
         return app;
     }
