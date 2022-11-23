@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import dotenv from 'dotenv';
+import fs from 'fs';
 dotenv.config();
 
 import david from "../src";
@@ -30,10 +31,15 @@ const fundBContract = new ethers.Contract(
  * 
  * Note fund A and B does not necessarily have to be on the same chain. 
  */
-
-const dave = new david.David({webhook: {
-  port: 8888,
-  apiKey: "garongschickchen"
+ const privateKey = fs.readFileSync('./example/server.key');
+ const certificate = fs.readFileSync('./example/server.crt');
+// defaults to 443 due to HTTPS
+ const dave = new david.David({webhook: {
+  apiKey: "garongschickchen",
+  httpsConfig: {
+    key: privateKey,
+    cert: certificate
+  }
 }});
 
 const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {

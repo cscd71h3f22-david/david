@@ -1,31 +1,35 @@
 import express, { Express } from 'express';
 import http from 'http';
+import https from 'https';
 import { TaskFn } from './task';
 
+export interface HttpsConfig {
+    key: Buffer;
+    cert: Buffer;
+}
+
 export interface WebhookConfig {
-    /**
-     * Port of the webhook listener server.
-     * Defaults to 5000.
-     * 
-     */
     port?: number;
     apiKey: string;
+    httpsConfig?: HttpsConfig;
 }
 
 export class WebhookServer {
     private readonly apiKey: string;
     private readonly port: number;
     private readonly app: Express;
+    private readonly httpsConfig: HttpsConfig | undefined;
     private webhookEventToTask: Map<string, TaskFn> = new Map();
 
     /**
      * 
      * @param param0 Webhook Configurations
      */
-    constructor({apiKey, port}: WebhookConfig) {
+    constructor({apiKey, port, httpsConfig}: WebhookConfig) {
         this.apiKey = apiKey;
-        this.port = port ?? 5000;
+        this.port = httpsConfig ? port ?? 443 : port ?? 80;
         this.app = this.buildApp();
+        this.httpsConfig = httpsConfig;
     }
 
     public buildApp() {
@@ -57,6 +61,10 @@ export class WebhookServer {
     }
 
     public start(): void {
+        if (this.httpsConfig) {
+            https.createServer(this.httpsConfig, this.app).listen(this.port);
+            return;
+        }
         http.createServer(this.app).listen(this.port);
     }
 

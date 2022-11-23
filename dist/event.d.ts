@@ -83,18 +83,17 @@ export declare namespace events {
         constructor({ contract, eventName, startTime, endTime }: OnchainEventConfig);
         protected _register(exec: TaskFn): UnregisterFn;
     }
+    interface WebhookEventConfig extends EventConfigBase {
+        eventName: string;
+    }
+    export class WebhookEvent extends Event {
+        webhookServer: WebhookServer | undefined;
+        readonly name: string;
+        constructor({ eventName, startTime, endTime }: WebhookEventConfig);
+        setWebhookServer(webhookServer: WebhookServer): void;
+        protected _register(exec: TaskFn): UnregisterFn;
+    }
     export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
     export {};
-}
-interface WebhookEventConfig extends EventConfigBase {
-    webhook: boolean;
-    eventName: string;
-}
-export declare class WebhookEvent extends Event {
-    webhookServer: WebhookServer | undefined;
-    readonly name: string;
-    constructor({ eventName, startTime, endTime }: WebhookEventConfig);
-    setWebhookServer(webhookServer: WebhookServer): void;
-    protected _register(exec: TaskFn): UnregisterFn;
 }
 export {};
