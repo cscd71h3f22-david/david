@@ -62,9 +62,13 @@ const coolReference = new david.events.WebhookEvent({
   eventName: 'dapptechnologyinc'
 });
 
-const coolReference2 = new david.tasks.Task("Hi York", () => {
+const coolReference2 = new david.tasks.Task("taskA", () => {
+  console.log('Hi York')
   console.log('Hi Clara');
-  console.log('Hi Thierry');
+});
+
+const coolReference3 = new david.tasks.Task("taskB", () => {
+  console.log('Hi Thierry')
   console.log('Hi David');
 });
 
@@ -76,6 +80,10 @@ dave.on(
 dave.on(
   coolReference,
   coolReference2
+)
+dave.on(
+  coolReference,
+  coolReference3
 )
 
 dave.start();

@@ -19,33 +19,37 @@ class WebhookServer {
         this.app = this.buildApp();
         this.httpsConfig = httpsConfig;
     }
+    /**
+     * Returns an application built with webhook events
+     * @returns a web application built with express
+     */
     buildApp() {
         const app = (0, express_1.default)();
         app.get('/', (_, res) => {
             res.status(200).send('Welcome to David, our automation server! Use /api/trigger/id=???&apikey=??? to invoke webhooks!');
         });
         app.get('/api/trigger', (req, res) => {
-            console.log(req.query.id, req.query.apikey);
-            // if (!(req.query.id instanceof String && req.query.apikey instanceof String)) {
-            //     res.status(400).send('Invalid input.');
-            //     return;
-            // }
             if (req.query.apikey !== this.apiKey) {
                 res.status(403).send('Unauthorized.');
                 return;
             }
-            const tasks = this.getTasks();
+            const tasks = this.getTaskMapping();
             const eventId = req.query.id;
             if (!tasks.has(eventId)) {
                 res.status(404).send('Event Id does not exist.');
                 return;
             }
-            const task = tasks.get(eventId);
-            task();
+            const tasksToRun = tasks.get(eventId);
+            for (const task of tasksToRun) {
+                task();
+            }
             res.sendStatus(200);
         });
         return app;
     }
+    /**
+     * Starts the web application for the events
+     */
     start() {
         if (this.httpsConfig) {
             https_1.default.createServer(this.httpsConfig, this.app).listen(this.port);
@@ -53,12 +57,30 @@ class WebhookServer {
         }
         http_1.default.createServer(this.app).listen(this.port);
     }
-    getTasks() {
+    /**
+     * Returns updated mapping with event ids to tasks
+     * @returns maps such that event id -> task
+     */
+    getTaskMapping() {
         return this.webhookEventToTask;
     }
+    /**
+     * Add a task to a given webhook event
+     * @param eventName event name to add a task to
+     * @param task task to execute
+     */
     registerEvent(eventName, task) {
-        this.webhookEventToTask.set(eventName, task);
+        if (this.webhookEventToTask.has(eventName)) {
+            const updatedTasks = this.webhookEventToTask.get(eventName).concat([task]);
+            this.webhookEventToTask.set(eventName, updatedTasks);
+            return;
+        }
+        this.webhookEventToTask.set(eventName, [task]);
     }
+    /**
+     * Remove event from the set
+     * @param eventName event name to remove
+     */
     removeEvent(eventName) {
         this.webhookEventToTask.delete(eventName);
     }
