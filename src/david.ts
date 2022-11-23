@@ -1,15 +1,8 @@
-import http from 'http';
-import { EventChain, Event } from './event';
+import { EventChain, Event, WebhookEvent } from './event';
 
 import { tasks } from './task';
+import { WebhookServer, WebhookConfig } from './webhooks';
 
-interface WebhookConfig {
-  /**
-   * Port of the webhook listener server.
-   * Defaults to 5000.
-   */
-  port?: number;
-}
 interface DavidConfig {
   /**
    * When provided, David will start a http server to listen to webhook events. 
@@ -23,8 +16,8 @@ interface DavidConfig {
  */
 export class David {
 
-  private webhook?: WebhookConfig; 
-
+  private webhook?: WebhookConfig;
+  private webhookServer?: WebhookServer;
   private tasks: tasks.Task[] = [];
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
 
@@ -36,16 +29,21 @@ export class David {
   }
 
   public start() {
-    console.log('David started!')
+    if (this.webhook) {
+      this.webhookServer = new WebhookServer(this.webhook);
+    }
     for (const [event, tasks] of this.eventToTasks) {
+      if (this.webhook && event instanceof WebhookEvent) {
+        event.setWebhookServer(<WebhookServer>this.webhookServer);
+      }
       for (const task of tasks) {
         event.register(task.exec);
       }
     }
-    
     if (this.webhook) {
-      this.startHTTPServer();
+      (<WebhookServer>this.webhookServer).start();
     }
+    console.log('David started!')
   }
 
   public on(eventOrChain: Event | EventChain, task: tasks.Task) {
@@ -68,12 +66,5 @@ export class David {
     return this;
   }
 
-  private startHTTPServer() {
-    const server = new http.Server((req, res) => {
-
-      // TODO: Figure out how to implement webhook event listener. How much freedom do we want to give our users.
-
-    });
-  }
-
 }
+
