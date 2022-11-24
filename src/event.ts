@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import cron from 'node-cron';
 import { TaskFn } from "./task";
+import { utils } from "./util";
 import { WebhookServer } from "./webhooks";
 
 
@@ -17,8 +18,6 @@ interface EventConfigBase {
  * Contain the logic of when to call a task function.
  */
 export abstract class Event {
-  // TODO: Use cron instead of setTimeout for when the wait time is longer than 24 days
-  // https://stackoverflow.com/questions/53280186/how-long-can-nodejs-settimeout-wait
   protected _startTime?: Date;
   protected _endTime?: Date;
 
@@ -38,7 +37,7 @@ export abstract class Event {
     const unregister = this._register(exec);
 
     if (this._endTime) {
-      setTimeout(() => {
+      utils.setTimeout(() => {
         unregister();
       }, this.timeUntilEnd());
     }
@@ -141,9 +140,9 @@ export namespace events {
     }
   
     protected _register(exec: TaskFn): UnregisterFn {
-      let timeout: NodeJS.Timeout | null = null;
+      let timeout: utils.Timeout | null = null;
       if (this.startTime) {
-        timeout = setTimeout(() => {
+        timeout = utils.setTimeout(() => {
           this.intervalTimer = setInterval(exec, this.interval);
         }, this.timeUntilStart());
       }
@@ -174,9 +173,9 @@ export namespace events {
       const cronTask = cron.schedule(this.cron, exec, {
         scheduled: !!this.startTime
       });
-      let timeout: NodeJS.Timeout;
+      let timeout: utils.Timeout;
       if (this.startTime) {
-        timeout = setTimeout(() => cronTask.start(), this.timeUntilStart());
+        timeout = utils.setTimeout(() => cronTask.start(), this.timeUntilStart());
       }
   
       return () => {
