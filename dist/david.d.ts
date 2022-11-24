@@ -1,12 +1,6 @@
 import { EventChain, Event } from './event';
 import { tasks } from './task';
-interface WebhookConfig {
-    /**
-     * Port of the webhook listener server.
-     * Defaults to 5000.
-     */
-    port?: number;
-}
+import { WebhookConfig } from './webhooks';
 interface DavidConfig {
     /**
      * When provided, David will start a http server to listen to webhook events.
@@ -19,11 +13,25 @@ interface DavidConfig {
  */
 export declare class David {
     private webhook?;
+    private webhookServer?;
     private tasks;
     private eventToTasks;
+    /**
+     * Creates an instance of David
+     * @param config configuration settings for David
+     */
     constructor(config?: DavidConfig);
+    /**
+     * Registers events and starts the web servers for handling
+     * webhooks.
+     */
     start(): void;
-    on(eventOrChain: Event | EventChain, task: tasks.Task): this;
-    private startHTTPServer;
+    /**
+     * Adds event and task to David
+     * @param eventOrChain Event associated with the task
+     * @param task Task to run when this event is emitted
+     * @returns instance of David
+     */
+    on(eventOrChain: Event | EventChain, task: tasks.Task): David;
 }
 export {};

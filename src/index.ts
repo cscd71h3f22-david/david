@@ -1,5 +1,5 @@
-import {tasks} from './task';
-import {events} from './event';
+import { tasks } from './task';
+import { events } from './event';
 import { David } from './david';
 
 const david = {

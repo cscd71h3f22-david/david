@@ -71,6 +71,9 @@ class EventChain {
     }
 }
 exports.EventChain = EventChain;
+/**
+ * Different types of events
+ */
 var events;
 (function (events) {
     class OnceEvent extends Event {
@@ -155,4 +158,24 @@ var events;
         }
     }
     events.OnchainEvent = OnchainEvent;
+    class WebhookEvent extends Event {
+        constructor({ eventName, startTime, endTime }) {
+            super({ startTime, endTime });
+            this.webhookServer = undefined;
+            this.name = eventName;
+        }
+        setWebhookServer(webhookServer) {
+            this.webhookServer = webhookServer;
+        }
+        _register(exec) {
+            if (!this.webhookServer) {
+                throw 'Webhook Server not initialized yet.';
+            }
+            this.webhookServer.registerEvent(this.name, exec);
+            return () => {
+                this.webhookServer.removeEvent(this.name);
+            };
+        }
+    }
+    events.WebhookEvent = WebhookEvent;
 })(events = exports.events || (exports.events = {}));

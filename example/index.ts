@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import dotenv from 'dotenv';
+import fs from 'fs';
 dotenv.config();
 
 import david from "../src";
@@ -30,8 +31,16 @@ const fundBContract = new ethers.Contract(
  * 
  * Note fund A and B does not necessarily have to be on the same chain. 
  */
-
-const dave = new david.David();
+ const privateKey = fs.readFileSync('./example/server.key');
+ const certificate = fs.readFileSync('./example/server.crt');
+// defaults to 443 due to HTTPS
+ const dave = new david.David({webhook: {
+  apiKey: "garongschickchen",
+  httpsConfig: {
+    key: privateKey,
+    cert: certificate
+  }
+}});
 
 const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {
   // Deposit to fund A. 
@@ -47,12 +56,34 @@ const everyMondayInTheNext20Days = new david.events.CronEvent({
 const someoneVotedOnFundB = new david.events.OnchainEvent({
   contract: fundBContract,
   eventName: 'Vote'
-}); 
+});
+
+const coolReference = new david.events.WebhookEvent({
+  eventName: 'dapptechnologyinc'
+});
+
+const coolReference2 = new david.tasks.Task("taskA", () => {
+  console.log('Hi York')
+  console.log('Hi Clara');
+});
+
+const coolReference3 = new david.tasks.Task("taskB", () => {
+  console.log('Hi Thierry')
+  console.log('Hi David');
+});
 
 dave.on(
   everyMondayInTheNext20Days
     .and(someoneVotedOnFundB),
   depositToFundA
 );
+dave.on(
+  coolReference,
+  coolReference2
+)
+dave.on(
+  coolReference,
+  coolReference3
+)
 
 dave.start();

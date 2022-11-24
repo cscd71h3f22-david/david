@@ -1,15 +1,8 @@
-import http from 'http';
-import { EventChain, Event } from './event';
+import { EventChain, Event, events } from './event';
 
 import { tasks } from './task';
+import { WebhookServer, WebhookConfig } from './webhooks';
 
-interface WebhookConfig {
-  /**
-   * Port of the webhook listener server.
-   * Defaults to 5000.
-   */
-  port?: number;
-}
 interface DavidConfig {
   /**
    * When provided, David will start a http server to listen to webhook events. 
@@ -23,11 +16,15 @@ interface DavidConfig {
  */
 export class David {
 
-  private webhook?: WebhookConfig; 
-
+  private webhook?: WebhookConfig;
+  private webhookServer?: WebhookServer;
   private tasks: tasks.Task[] = [];
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
 
+  /**
+   * Creates an instance of David
+   * @param config configuration settings for David
+   */
   constructor(config?: DavidConfig) {
     if (config) {
       const {webhook} = config;
@@ -35,20 +32,35 @@ export class David {
     }
   }
 
-  public start() {
-    console.log('David started!')
+  /**
+   * Registers events and starts the web servers for handling
+   * webhooks.
+   */
+  public start(): void {
+    if (this.webhook) {
+      this.webhookServer = new WebhookServer(this.webhook);
+    }
     for (const [event, tasks] of this.eventToTasks) {
+      if (this.webhook && event instanceof events.WebhookEvent) {
+        event.setWebhookServer(<WebhookServer>this.webhookServer);
+      }
       for (const task of tasks) {
         event.register(task.exec);
       }
     }
-    
     if (this.webhook) {
-      this.startHTTPServer();
+      (<WebhookServer>this.webhookServer).start();
     }
+    console.log('David started!')
   }
 
-  public on(eventOrChain: Event | EventChain, task: tasks.Task) {
+  /**
+   * Adds event and task to David
+   * @param eventOrChain Event associated with the task
+   * @param task Task to run when this event is emitted
+   * @returns instance of David
+   */
+  public on(eventOrChain: Event | EventChain, task: tasks.Task): David {
     if (eventOrChain instanceof Event) {
       // First parameter is an event
       let event = eventOrChain;
@@ -68,12 +80,5 @@ export class David {
     return this;
   }
 
-  private startHTTPServer() {
-    const server = new http.Server((req, res) => {
-
-      // TODO: Figure out how to implement webhook event listener. How much freedom do we want to give our users.
-
-    });
-  }
-
 }
+
