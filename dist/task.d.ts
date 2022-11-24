@@ -1,22 +1,11 @@
-import { ethers } from "ethers";
-import { address } from "./constants";
-import { Event } from "./event";
-interface TaskConfig {
-    contractAddr: address;
-    abi: ethers.ContractInterface;
-    provider: ethers.providers.Provider;
-    latestBlock: number;
+export type TaskFn = () => void;
+export declare namespace tasks {
+    /**
+     * Contain the task to be executed when an event is triggered.
+     */
+    class Task {
+        readonly name: string;
+        readonly exec: TaskFn;
+        constructor(name: string, exec: TaskFn);
+    }
 }
-export declare class Task {
-    events: Event[];
-    contract: ethers.Contract;
-    abi: ethers.ContractInterface;
-    provider: ethers.providers.Provider;
-    latestBlock: number;
-    constructor({ contractAddr, abi, provider, latestBlock }: TaskConfig);
-    addEvent(event: Event): void;
-    handleEvent(event: Event, startingQueryBlock: number, latestBlock: number): Promise<void>;
-    queryChain: () => Promise<void>;
-    start(): void;
-}
-export {};
