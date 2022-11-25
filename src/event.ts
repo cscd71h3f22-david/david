@@ -1,5 +1,7 @@
 import { ethers } from "ethers";
 import cron from 'node-cron';
+import uuid from 'uuid';
+
 import { TaskFn } from "./task";
 import { utils } from "./util";
 import { WebhookServer } from "./webhooks";
@@ -18,6 +20,7 @@ interface EventConfigBase {
  * Contain the logic of when to call a task function.
  */
 export abstract class Event {
+  public readonly id = uuid.v4();
   protected _startTime?: Date;
   protected _endTime?: Date;
 
