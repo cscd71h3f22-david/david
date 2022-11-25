@@ -37,11 +37,10 @@ const fundBContract = new ethers.Contract(
  const dave = new david.David({webhook: {
   homepage: true,
   apiKey: "garongschickchen",
-  // httpsConfig: {
-  //   key: privateKey,
-  //   cert: certificate
-  // },
-  port: 5000
+  httpsConfig: {
+    key: privateKey,
+    cert: certificate
+  },
 }});
 
 const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {

@@ -14,6 +14,11 @@ export interface WebhookConfig {
     port?: number;
     apiKey: string;
     httpsConfig?: HttpsConfig;
+    /**
+     * 
+     * Careful not to override webhook endpoints.
+     */
+    customEndpoints?: express.Router;
 }
 
 export type WebhookVerifier = (req: express.Request) => boolean | Promise<boolean>;
@@ -25,16 +30,18 @@ export class WebhookServer {
     private readonly httpsConfig: HttpsConfig | undefined;
     public readonly webhookEventToTask: Map<events.WebhookEvent, TaskFn[]> = new Map();
     private readonly homepage: boolean;
+    private readonly customEndpoints: express.Router;
 
     /**
      * 
      * @param param0 Webhook Configurations
      */
-    constructor({apiKey, port, httpsConfig, homepage}: WebhookConfig) {
+    constructor({apiKey, port, httpsConfig, homepage, customEndpoints}: WebhookConfig) {
         this.apiKey = apiKey;
         this.port = httpsConfig ? port ?? 443 : port ?? 80;
         this.httpsConfig = httpsConfig;
         this.homepage = homepage ?? true;
+        this.customEndpoints = customEndpoints ?? express.Router();
 
         this.app = this.buildApp();
     }
@@ -50,6 +57,8 @@ export class WebhookServer {
                 res.status(200).send('Welcome to David, our automation server! David is now listening to webhook requests. ')
             });
         }
+
+        app.use('/', this.customEndpoints);
 
         app.use(async (req, res) => {
             for (const [event, tasks] of this.webhookEventToTask) {
