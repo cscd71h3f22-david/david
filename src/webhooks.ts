@@ -1,6 +1,7 @@
 import express, { Express } from 'express';
 import http from 'http';
 import https from 'https';
+import { events } from './event';
 import { TaskFn } from './task';
 
 export interface HttpsConfig {
@@ -9,27 +10,33 @@ export interface HttpsConfig {
 }
 
 export interface WebhookConfig {
+    homepage?: boolean;
     port?: number;
     apiKey: string;
     httpsConfig?: HttpsConfig;
 }
+
+export type WebhookVerifier = (req: express.Request) => boolean | Promise<boolean>;
 
 export class WebhookServer {
     private readonly apiKey: string;
     private readonly port: number;
     private readonly app: Express;
     private readonly httpsConfig: HttpsConfig | undefined;
-    private webhookEventToTask: Map<string, TaskFn[]> = new Map();
+    public readonly webhookEventToTask: Map<events.WebhookEvent, TaskFn[]> = new Map();
+    private readonly homepage: boolean;
 
     /**
      * 
      * @param param0 Webhook Configurations
      */
-    constructor({apiKey, port, httpsConfig}: WebhookConfig) {
+    constructor({apiKey, port, httpsConfig, homepage}: WebhookConfig) {
         this.apiKey = apiKey;
         this.port = httpsConfig ? port ?? 443 : port ?? 80;
-        this.app = this.buildApp();
         this.httpsConfig = httpsConfig;
+        this.homepage = homepage ?? true;
+
+        this.app = this.buildApp();
     }
 
     /**
@@ -38,26 +45,24 @@ export class WebhookServer {
      */
     private buildApp() {
         const app = express();
-        app.get('/', (_, res: express.Response) => {
-            res.status(200).send('Welcome to David, our automation server! Use /api/trigger/id=???&apikey=??? to invoke webhooks!')
+        if (this.homepage) {
+            app.get('/', (_, res: express.Response) => {
+                res.status(200).send('Welcome to David, our automation server! David is now listening to webhook requests. ')
+            });
+        }
+
+        app.use(async (req, res) => {
+            for (const [event, tasks] of this.webhookEventToTask) {
+                if (req.method.toUpperCase() === event.method.toUpperCase() 
+                    && req.path === event.path 
+                    && await event.verifier(req)
+                ) {
+                    tasks.forEach(taskFn => taskFn());
+                }
+            }
+            res.status(200).end();
         });
-        app.get('/api/trigger', (req: express.Request, res: express.Response) => {
-            if (req.query.apikey !== this.apiKey) {
-                res.status(403).send('Unauthorized.');
-                return;
-            }
-            const tasks = this.getTaskMapping();
-            const eventId = <string>req.query.id;
-            if (!tasks.has(eventId)) {
-                res.status(404).send('Event Id does not exist.');
-                return;
-            }
-            const tasksToRun = <TaskFn[]>tasks.get(eventId);
-            for (const task of tasksToRun) {
-                task();
-            }
-            res.sendStatus(200);
-        });
+        
         return app;
     }
 
@@ -65,19 +70,16 @@ export class WebhookServer {
      * Starts the web application for the events
      */
     public start(): void {
+
+        const listeningListener = () => {
+            console.log(`David listening on port ${this.port}`);
+        }
+
         if (this.httpsConfig) {
-            https.createServer(this.httpsConfig, this.app).listen(this.port);
+            https.createServer(this.httpsConfig, this.app).listen(this.port, listeningListener);
             return;
         }
-        http.createServer(this.app).listen(this.port);
-    }
-
-    /**
-     * Returns updated mapping with event ids to tasks
-     * @returns maps such that event id -> task
-     */
-    public getTaskMapping(): Map<string, TaskFn[]> {
-        return this.webhookEventToTask;
+        http.createServer(this.app).listen(this.port, listeningListener);
     }
 
     /**
@@ -85,21 +87,20 @@ export class WebhookServer {
      * @param eventName event name to add a task to
      * @param task task to execute
      */
-    public registerEvent(eventName: string, task: TaskFn): void {
-        if (this.webhookEventToTask.has(eventName)) {
-            const updatedTasks = (<TaskFn[]>this.webhookEventToTask.get(eventName)).concat([task]);
-            this.webhookEventToTask.set(eventName, updatedTasks);
+    public registerEvent(event: events.WebhookEvent, task: TaskFn): void {
+        if (this.webhookEventToTask.has(event)) {
+            this.webhookEventToTask.get(event)?.push(task);
             return;
         }
-        this.webhookEventToTask.set(eventName, [task]);
+        this.webhookEventToTask.set(event, [task]);
     }
 
     /**
      * Remove event from the set
-     * @param eventName event name to remove
+     * @param event event to remove
      */
-    public removeEvent(eventName: string): void {
-        this.webhookEventToTask.delete(eventName);
+    public removeEvent(event: events.WebhookEvent): void {
+        this.webhookEventToTask.delete(event);
     }
 }
 

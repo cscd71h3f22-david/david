@@ -18,7 +18,6 @@ export class David {
 
   private webhook?: WebhookConfig;
   private webhookServer?: WebhookServer;
-  private tasks: tasks.Task[] = [];
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
 
   /**
@@ -49,7 +48,7 @@ export class David {
       }
     }
     if (this.webhook) {
-      (<WebhookServer>this.webhookServer).start();
+      this.webhookServer?.start();
     }
     console.log('David started!')
   }

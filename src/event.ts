@@ -1,10 +1,10 @@
 import { ethers } from "ethers";
 import cron from 'node-cron';
-import uuid from 'uuid';
+import { v4 as uuidv4} from 'uuid';
 
 import { TaskFn } from "./task";
 import { utils } from "./util";
-import { WebhookServer } from "./webhooks";
+import { WebhookServer, WebhookVerifier } from "./webhooks";
 
 
 type UnregisterFn = () => void;
@@ -20,7 +20,7 @@ interface EventConfigBase {
  * Contain the logic of when to call a task function.
  */
 export abstract class Event {
-  public readonly id = uuid.v4();
+  public readonly id = uuidv4();
   protected _startTime?: Date;
   protected _endTime?: Date;
 
@@ -218,14 +218,24 @@ export namespace events {
 
   interface WebhookEventConfig extends EventConfigBase {
     eventName: string;
+    verifier: WebhookVerifier;
+    path: string;
+    method: string;
   }
   
   export class WebhookEvent extends Event {
     public webhookServer: WebhookServer | undefined = undefined;
     public readonly name: string;
-    constructor({eventName, startTime, endTime}: WebhookEventConfig) {
+    public readonly verifier: WebhookVerifier;
+    public readonly path: string;
+    public readonly method: string;
+
+    constructor({eventName, startTime, endTime, verifier, path, method}: WebhookEventConfig) {
       super({startTime, endTime});
       this.name = eventName;
+      this.verifier = verifier;
+      this.path = path;
+      this.method = method;
     }
   
     public setWebhookServer(webhookServer: WebhookServer) {
@@ -236,9 +246,9 @@ export namespace events {
       if (!this.webhookServer) {
         throw 'Webhook Server not initialized yet.'
       }
-      this.webhookServer.registerEvent(this.name, exec)
+      this.webhookServer.registerEvent(this, exec)
       return () => {
-        (<WebhookServer>this.webhookServer).removeEvent(this.name);
+        this.webhookServer?.removeEvent(this);
       }
     }
   }

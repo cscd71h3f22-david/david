@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 
 export type TaskFn = () => void;
 
@@ -8,7 +8,7 @@ export namespace tasks {
    * Contain the task to be executed when an event is triggered.
    */
   export class Task {
-    public readonly id = uuid.v4(); 
+    public readonly id = uuidv4(); 
     public readonly exec: TaskFn;
 
     constructor(
@@ -24,6 +24,5 @@ export namespace tasks {
         }
       }
     }
-
   }
 }
