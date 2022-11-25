@@ -154,7 +154,7 @@ export namespace events {
         if (this.intervalTimer) {
           clearInterval(this.intervalTimer);
         } else if (timeout) {
-          clearTimeout(timeout);
+          utils.clearTimeout(timeout);
         }
       }
     }
@@ -183,7 +183,7 @@ export namespace events {
   
       return () => {
         if (timeout) {
-          clearTimeout(timeout);
+          utils.clearTimeout(timeout);
         } else {
           cronTask.stop();
         }
