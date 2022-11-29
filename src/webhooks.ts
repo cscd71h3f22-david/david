@@ -52,6 +52,7 @@ export class WebhookServer {
      */
     private buildApp() {
         const app = express();
+	app.use(express.json());
         if (this.homepage) {
             app.get('/', (_, res: express.Response) => {
                 res.status(200).send('Welcome to David, our automation server! David is now listening to webhook requests. ')
