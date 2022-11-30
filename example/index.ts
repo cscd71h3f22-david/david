@@ -35,11 +35,12 @@ const fundBContract = new ethers.Contract(
  const certificate = fs.readFileSync('./example/server.crt');
 // defaults to 443 due to HTTPS
  const dave = new david.David({webhook: {
+  homepage: true,
   apiKey: "garongschickchen",
   httpsConfig: {
     key: privateKey,
     cert: certificate
-  }
+  },
 }});
 
 const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {
@@ -59,7 +60,12 @@ const someoneVotedOnFundB = new david.events.OnchainEvent({
 });
 
 const coolReference = new david.events.WebhookEvent({
-  eventName: 'dapptechnologyinc'
+  eventName: 'dapptechnologyinc',
+  verifier: (req) => {
+    return req.query['id'] === 'dapptechnologyinc' && req.query['apikey'] === 'garongschickchen'
+  },
+  method: 'GET',
+  path: '/api/trigger'
 });
 
 const coolReference2 = new david.tasks.Task("taskA", () => {

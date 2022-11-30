@@ -18,7 +18,6 @@ export class David {
 
   private webhook?: WebhookConfig;
   private webhookServer?: WebhookServer;
-  private tasks: tasks.Task[] = [];
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
 
   /**
@@ -49,7 +48,7 @@ export class David {
       }
     }
     if (this.webhook) {
-      (<WebhookServer>this.webhookServer).start();
+      this.webhookServer?.start();
     }
     console.log('David started!')
   }
@@ -60,7 +59,7 @@ export class David {
    * @param task Task to run when this event is emitted
    * @returns instance of David
    */
-  public on(eventOrChain: Event | EventChain, task: tasks.Task): David {
+  public on(eventOrChain: Event | EventChain | Event[], task: tasks.Task): David {
     if (eventOrChain instanceof Event) {
       // First parameter is an event
       let event = eventOrChain;
@@ -73,6 +72,11 @@ export class David {
       // First parameter is an event chain
       let events = eventOrChain.events; 
       for (const event of events) {
+        this.on(event, task);
+      }
+    } else if (eventOrChain instanceof Array) {
+      // First parameter is Event[]
+      for (const event of eventOrChain) {
         this.on(event, task);
       }
     }
