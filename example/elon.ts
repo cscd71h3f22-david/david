@@ -2,8 +2,23 @@ import david from "../src";
 import express from "express";
 import crypto from "crypto";
 import dotenv from 'dotenv';
+import { ethers } from "ethers";
 dotenv.config();
+import fundBAbi from './fundB_abi.json';
 
+// Ethers.js objects
+
+const getTestnetProvider = () =>
+  new ethers.providers.JsonRpcProvider(
+    process.env.PROVIDER_URL!
+  );
+
+const fundBContract = new ethers.Contract(
+  "0x47b9c9705096aB0AF315d1A342BBF78C0671Da6C",
+  fundBAbi,
+  getTestnetProvider()
+);
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, getTestnetProvider());
 /**
  * This example deposits into fund B whenever the user likes an Elon Musk tweet.
  */
@@ -38,10 +53,9 @@ const likedAnElonTweet = new david.events.WebhookEvent({
     method: "POST",
     path: "/webhooks/twitter",
     verifier: (req) => {
-        const bodyObj = JSON.parse(req.body);
-        const events: any[] = bodyObj.favorite_events; 
+        const events: any[] = req.body.favorite_events; 
         for (const event of events) {
-            if (event.favorited_status.user.id === "") {
+            if (event.favorited_status.user.id === 44196397) {
                 return true;
             }
         }
@@ -49,16 +63,19 @@ const likedAnElonTweet = new david.events.WebhookEvent({
     }
 });
 
-const doSomething = new david.tasks.Task(
-    "something", 
-    () => {
-        console.log("Liked an Elon tweet");
+const depositToFundB = new david.tasks.Task(
+    "Deposit to fund B", 
+    async () => {
+        console.log('Deposit into fund B');
+        const depositAmt = ethers.BigNumber.from(10000000000);
+        const tx = await fundBContract.connect(signer).deposit(depositAmt, {value: depositAmt});
+        console.log(`Transaction created: https://goerli.etherscan.io/tx/${tx.hash}`);
     }
 );
 
 dave.on(
-    likedAnElonTweet,
-    doSomething
+    likedAnElonTweet, 
+    depositToFundB
 );
 
 dave.start();
