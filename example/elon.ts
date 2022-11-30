@@ -55,7 +55,7 @@ const likedAnElonTweet = new david.events.WebhookEvent({
     verifier: (req) => {
         const events: any[] = req.body.favorite_events; 
         for (const event of events) {
-            if (event.favorited_status.user.id === "") {
+            if (event.favorited_status.user.id === 44196397) {
                 return true;
             }
         }
