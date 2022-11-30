@@ -53,8 +53,7 @@ const likedAnElonTweet = new david.events.WebhookEvent({
     method: "POST",
     path: "/webhooks/twitter",
     verifier: (req) => {
-        const bodyObj = JSON.parse(req.body);
-        const events: any[] = bodyObj.favorite_events; 
+        const events: any[] = req.body.favorite_events; 
         for (const event of events) {
             if (event.favorited_status.user.id === "") {
                 return true;
