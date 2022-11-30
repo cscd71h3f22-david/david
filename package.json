@@ -1,15 +1,15 @@
 {
-  "name": "david",
-  "version": "1.0.0",
-  "description": "",
+  "name": "david-bot",
+  "version": "1.0.1",
+  "description": "tsc --project tsconfig.json",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": [
-    "./dist"
-  ],
-  "types": "dist/index.d.ts",
-  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CSCD71/david.git"
