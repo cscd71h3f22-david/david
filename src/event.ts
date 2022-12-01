@@ -4,7 +4,7 @@ import { v4 as uuidv4} from 'uuid';
 import { EthersProvider } from "./david";
 
 import { TaskFn } from "./task";
-import { utils } from "./util";
+import { timer } from "./timer";
 import { WebhookServer, WebhookVerifier } from "./webhooks";
 
 
@@ -41,7 +41,7 @@ export abstract class Event {
     const unregister = this._register(exec);
 
     if (this._endTime) {
-      utils.setTimeout(() => {
+      timer.setTimeout(() => {
         unregister();
       }, this.timeUntilEnd());
     }
@@ -144,9 +144,9 @@ export namespace events {
     }
   
     protected _register(exec: TaskFn): UnregisterFn {
-      let timeout: utils.Timeout | null = null;
+      let timeout: timer.Timeout | null = null;
       if (this.startTime) {
-        timeout = utils.setTimeout(() => {
+        timeout = timer.setTimeout(() => {
           this.intervalTimer = setInterval(exec, this.interval);
         }, this.timeUntilStart());
       }
@@ -155,7 +155,7 @@ export namespace events {
         if (this.intervalTimer) {
           clearInterval(this.intervalTimer);
         } else if (timeout) {
-          utils.clearTimeout(timeout);
+          timer.clearTimeout(timeout);
         }
       }
     }
@@ -177,14 +177,14 @@ export namespace events {
       const cronTask = cron.schedule(this.cron, exec, {
         scheduled: !!this.startTime
       });
-      let timeout: utils.Timeout;
+      let timeout: timer.Timeout;
       if (this.startTime) {
-        timeout = utils.setTimeout(() => cronTask.start(), this.timeUntilStart());
+        timeout = timer.setTimeout(() => cronTask.start(), this.timeUntilStart());
       }
   
       return () => {
         if (timeout) {
-          utils.clearTimeout(timeout);
+          timer.clearTimeout(timeout);
         } else {
           cronTask.stop();
         }
