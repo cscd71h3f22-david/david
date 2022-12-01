@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import { EventChain, Event, events } from './event';
 
 import { tasks } from './task';
+import { EthersProvider } from './utils';
 import { WebhookServer, WebhookConfig } from './webhooks';
 
 interface DavidConfig {
@@ -10,8 +11,6 @@ interface DavidConfig {
    */
   webhook?: WebhookConfig;
 }
-
-export type EthersProvider = ethers.providers.Provider;
 
 /**
  * A class responsible for managing global tasks and events.
@@ -59,7 +58,7 @@ export class David {
       }
 
       for (const task of tasks) {
-        event.register(task.exec);
+        event.register(task);
       }
     }
     if (this.webhook) {

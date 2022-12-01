@@ -1,9 +1,9 @@
 import { ethers } from "ethers";
 import cron from 'node-cron';
 import { v4 as uuidv4} from 'uuid';
-import { EthersProvider } from "./david";
+import { Contract, EthersProvider } from "./utils";
 
-import { TaskFn } from "./task";
+import { TaskFn, tasks } from "./task";
 import { timer } from "./timer";
 import { WebhookServer, WebhookVerifier } from "./webhooks";
 
@@ -36,9 +36,8 @@ export abstract class Event {
    * 
    * @param exec 
    */
-  public register(exec: TaskFn) {
-
-    const unregister = this._register(exec);
+  public register(task: tasks.Task) {
+    const unregister = this._register(task);
 
     if (this._endTime) {
       timer.setTimeout(() => {
@@ -86,7 +85,7 @@ export abstract class Event {
    * @param exec The function to be executed upon trigger.
    * @returns UnregisterFn: A function to be called at this.endTime. 
    */
-  protected abstract _register(exec: TaskFn): UnregisterFn;
+  protected abstract _register(task: tasks.Task): UnregisterFn;
 }
 
 /**
@@ -117,7 +116,8 @@ export namespace events {
       }
     }
   
-    protected _register(exec: TaskFn): UnregisterFn {
+    protected _register(task: tasks.Task): UnregisterFn {
+      const exec = task.exec;
       if (this.startTime) {
         setTimeout(exec, this.timeUntilStart())
       } else {
@@ -143,7 +143,8 @@ export namespace events {
       this.interval = interval;
     }
   
-    protected _register(exec: TaskFn): UnregisterFn {
+    protected _register(task: tasks.Task): UnregisterFn {
+      const exec = task.exec;
       let timeout: timer.Timeout | null = null;
       if (this.startTime) {
         timeout = timer.setTimeout(() => {
@@ -173,7 +174,8 @@ export namespace events {
       this.cron = cron;
     }
   
-    protected _register(exec: TaskFn): UnregisterFn {
+    protected _register(task: tasks.Task): UnregisterFn {
+      const exec = task.exec;
       const cronTask = cron.schedule(this.cron, exec, {
         scheduled: !!this.startTime
       });
@@ -194,14 +196,16 @@ export namespace events {
   
   interface OnchainEventConfig extends EventConfigBase {
     providerName: string; 
-    contractAddr: string; 
-    contractAbi: ethers.ContractInterface;
+    contract: Contract
     eventName: string; 
   }
   export class OnchainEvent extends Event {
   
     private contracts: ethers.Contract[] = [];
-    
+    /**
+     * block number => (combId + txIndx) []
+     */
+    private eventRecords: Map<number, string[]> = new Map();
   
     constructor(private config: OnchainEventConfig) {
       super({startTime: config.startTime, endTime: config.endTime});
@@ -212,18 +216,23 @@ export namespace events {
      * @param providers 
      */
     public setProviders(providers: EthersProvider[]) {
-      const {contractAddr, contractAbi, eventName} = this.config;
-      // TEMP: Taking in first provider. 
-      this.contracts = [providers[0]].map(provider => new ethers.Contract(
-        contractAddr, contractAbi, provider
-      ));
+      const { contract } = this.config;
+      this.contracts = providers.map(provider => contract.toEthersContract(provider));
     }
 
     public get providerName(): string {
       return this.config.providerName;
     }
   
-    protected _register(exec: TaskFn): UnregisterFn {
+    protected _register(task: tasks.Task): UnregisterFn {
+      const combineId = uuidv4(); 
+
+      const exec = (...args: any[]) => {
+        const chainEv: ethers.Event = args[args.length - 1];
+        if (!this.eventAlreadyTriggered(chainEv, combineId)) {
+          exec(args);
+        }
+      }
 
       for (const contract of this.contracts) {
         contract.on(this.config.eventName, exec);
@@ -234,6 +243,30 @@ export namespace events {
           contract.removeListener(this.config.eventName, exec);
         }
       }
+    }
+
+    private eventAlreadyTriggered(event: ethers.Event, combId: string): boolean {
+      const eventRecords = this.eventRecords.get(event.blockNumber);
+      const eventIdentifier = `${combId}|${event.transactionIndex}`;
+
+      if (!eventRecords) {
+        // Add event to record
+        this.eventRecords.set(event.blockNumber, [eventIdentifier]);
+
+        // Remove oldest blocks to save memory
+        if (this.eventRecords.size > 5) {
+          const oldestBlockNumber = Math.min(...this.eventRecords.keys());
+          this.eventRecords.delete(oldestBlockNumber);
+        }
+        return false;
+      }
+
+      for (const record of eventRecords) {
+        if (record === eventIdentifier) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 
@@ -263,7 +296,8 @@ export namespace events {
       this.webhookServer = webhookServer;
     }
   
-    protected _register(exec: TaskFn): UnregisterFn {
+    protected _register(task: tasks.Task): UnregisterFn {
+      const exec = task.exec;
       if (!this.webhookServer) {
         throw 'Webhook Server not initialized yet.'
       }

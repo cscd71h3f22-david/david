@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import {v4 as uuidv4} from 'uuid';
 
 export type TaskFn = <T extends any[]>(...args: T) => void;
@@ -25,4 +26,22 @@ export namespace tasks {
       }
     }
   }
+
+  // interface ContractTaskConfig {
+  //   name: string;
+  // }
+  // export class ContractTask extends Task {
+  //   constructor(
+  //     name: string,
+  //     signer: ethers.Signer,
+  //     contractAddr: string,
+  //     methodName: string, 
+  //     ...args: any[]
+  //   ) {
+  //     const exec = async () => {
+        
+  //     }
+  //     super(name, exec);
+  //   }
+  // }
 }
