@@ -1,6 +1,8 @@
+import { ethers } from 'ethers';
 import { EventChain, Event, events } from './event';
 
 import { tasks } from './task';
+import { EthersProvider } from './utils';
 import { WebhookServer, WebhookConfig } from './webhooks';
 
 interface DavidConfig {
@@ -19,6 +21,8 @@ export class David {
   private webhook?: WebhookConfig;
   private webhookServer?: WebhookServer;
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
+
+  private providers: Map<string, EthersProvider[]> = new Map();
 
   /**
    * Creates an instance of David
@@ -42,9 +46,19 @@ export class David {
     for (const [event, tasks] of this.eventToTasks) {
       if (this.webhook && event instanceof events.WebhookEvent) {
         event.setWebhookServer(<WebhookServer>this.webhookServer);
+      } else if (event instanceof events.OnchainEvent) {
+        
+        const providerName = event.providerName;
+        const eventProviders = this.providers.get(providerName);
+        if (eventProviders === undefined) {
+          throw new Error(`Provider named ${providerName} doesn't exist. Please register your providers using David.registerProvider().`);
+        }
+        
+        event.setProviders(eventProviders);
       }
+
       for (const task of tasks) {
-        event.register(task.exec);
+        event.register(task);
       }
     }
     if (this.webhook) {
@@ -57,7 +71,7 @@ export class David {
    * Adds event and task to David
    * @param eventOrChain Event associated with the task
    * @param task Task to run when this event is emitted
-   * @returns instance of David
+   * @returns the David Object
    */
   public on(eventOrChain: Event | EventChain | Event[], task: tasks.Task): David {
     if (eventOrChain instanceof Event) {
@@ -79,6 +93,28 @@ export class David {
       for (const event of eventOrChain) {
         this.on(event, task);
       }
+    }
+
+    return this;
+  }
+
+  /**
+   * 
+   * @param name name of provider
+   * @param providers ethers provider or list of ether providers.
+   * @returns the David object
+   */
+  public registerProvider(name: string, providers: EthersProvider): David;
+  public registerProvider(name: string, providers: EthersProvider[]): David;
+
+  public registerProvider(name: string, providers: EthersProvider | EthersProvider[]): David {
+    providers = providers instanceof Array ? providers: [providers];
+
+    if (this.providers.has(name)) {
+      providers = this.providers.get(name)!.concat(providers);
+      this.providers.set(name, providers);
+    } else {
+      this.providers.set(name, providers);
     }
 
     return this;

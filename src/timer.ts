@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 
-export namespace utils {
+export namespace timer {
 
   export type Timeout = number;
 
