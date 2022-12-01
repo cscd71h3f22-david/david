@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { EventChain, Event, events } from './event';
 
 import { tasks } from './task';
@@ -10,6 +11,8 @@ interface DavidConfig {
   webhook?: WebhookConfig;
 }
 
+type EthersProvider = ethers.providers.Provider;
+
 /**
  * A class responsible for managing global tasks and events.
  * It's recommanded to have only one instance of David exist at a time.
@@ -19,6 +22,8 @@ export class David {
   private webhook?: WebhookConfig;
   private webhookServer?: WebhookServer;
   private eventToTasks: Map<Event, tasks.Task[]> = new Map();
+
+  private providers: Map<string, EthersProvider[]> = new Map();
 
   /**
    * Creates an instance of David
@@ -57,7 +62,7 @@ export class David {
    * Adds event and task to David
    * @param eventOrChain Event associated with the task
    * @param task Task to run when this event is emitted
-   * @returns instance of David
+   * @returns the David Object
    */
   public on(eventOrChain: Event | EventChain | Event[], task: tasks.Task): David {
     if (eventOrChain instanceof Event) {
@@ -79,6 +84,28 @@ export class David {
       for (const event of eventOrChain) {
         this.on(event, task);
       }
+    }
+
+    return this;
+  }
+
+  /**
+   * 
+   * @param name name of provider
+   * @param providers ethers provider or list of ether providers.
+   * @returns the David object
+   */
+  public registerProvider(name: string, providers: EthersProvider): David;
+  public registerProvider(name: string, providers: EthersProvider[]): David;
+
+  public registerProvider(name: string, providers: EthersProvider | EthersProvider[]): David {
+    providers = providers instanceof Array ? providers: [providers];
+
+    if (this.providers.has(name)) {
+      providers = this.providers.get(name)!.concat(providers);
+      this.providers.set(name, providers);
+    } else {
+      this.providers.set(name, providers);
     }
 
     return this;
