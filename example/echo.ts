@@ -49,6 +49,6 @@ const logEvent = new david.tasks.Task('Log Event Data', (...args) => {
 
 dave
   .registerProvider('goerli', provider)
-  // .on([rightNow, interval5Min], yellToEcho)
+  .on([rightNow, interval5Min], yellToEcho)
   .on(echoEventFired, logEvent)
   .start();
