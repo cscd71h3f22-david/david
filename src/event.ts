@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import cron from 'node-cron';
 import { v4 as uuidv4} from 'uuid';
+import { EthersProvider } from "./david";
 
 import { TaskFn } from "./task";
 import { utils } from "./util";
@@ -192,26 +193,46 @@ export namespace events {
   }
   
   interface OnchainEventConfig extends EventConfigBase {
+    providerName: string; 
+    contractAddr: string; 
+    contractAbi: ethers.ContractInterface;
     eventName: string; 
-    contract: ethers.Contract;
   }
   export class OnchainEvent extends Event {
   
-    public readonly contract: ethers.Contract;
-    public readonly eventName: string;
+    private contracts: ethers.Contract[] = [];
+    
   
-    constructor({contract, eventName, startTime, endTime}: OnchainEventConfig) {
-      super({startTime, endTime});
-      this.contract = contract; 
-      this.eventName = eventName;
+    constructor(private config: OnchainEventConfig) {
+      super({startTime: config.startTime, endTime: config.endTime});
+    }
+
+    /**
+     * Inject providers into the Event object.
+     * @param providers 
+     */
+    public setProviders(providers: EthersProvider[]) {
+      const {contractAddr, contractAbi, eventName} = this.config;
+      // TEMP: Taking in first provider. 
+      this.contracts = [providers[0]].map(provider => new ethers.Contract(
+        contractAddr, contractAbi, provider
+      ));
+    }
+
+    public get providerName(): string {
+      return this.config.providerName;
     }
   
     protected _register(exec: TaskFn): UnregisterFn {
 
-      this.contract.on(this.eventName, exec);
+      for (const contract of this.contracts) {
+        contract.on(this.config.eventName, exec);
+      }
 
       return () => {
-        this.contract.removeListener(this.eventName, exec);
+        for (const contract of this.contracts) {
+          contract.removeListener(this.config.eventName, exec);
+        }
       }
     }
   }

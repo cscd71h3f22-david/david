@@ -1,6 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
 
-export type TaskFn = () => void;
+export type TaskFn = <T extends any[]>(...args: T) => void;
 
 export namespace tasks {
   

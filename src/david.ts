@@ -11,7 +11,7 @@ interface DavidConfig {
   webhook?: WebhookConfig;
 }
 
-type EthersProvider = ethers.providers.Provider;
+export type EthersProvider = ethers.providers.Provider;
 
 /**
  * A class responsible for managing global tasks and events.
@@ -47,7 +47,17 @@ export class David {
     for (const [event, tasks] of this.eventToTasks) {
       if (this.webhook && event instanceof events.WebhookEvent) {
         event.setWebhookServer(<WebhookServer>this.webhookServer);
+      } else if (event instanceof events.OnchainEvent) {
+        
+        const providerName = event.providerName;
+        const eventProviders = this.providers.get(providerName);
+        if (eventProviders === undefined) {
+          throw new Error(`Provider named ${providerName} doesn't exist. Please register your providers using David.registerProvider().`);
+        }
+        
+        event.setProviders(eventProviders);
       }
+
       for (const task of tasks) {
         event.register(task.exec);
       }
