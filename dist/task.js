@@ -23,4 +23,20 @@ var tasks;
         }
     }
     tasks.Task = Task;
+    // interface ContractTaskConfig {
+    //   name: string;
+    // }
+    // export class ContractTask extends Task {
+    //   constructor(
+    //     name: string,
+    //     signer: ethers.Signer,
+    //     contractAddr: string,
+    //     methodName: string, 
+    //     ...args: any[]
+    //   ) {
+    //     const exec = async () => {
+    //     }
+    //     super(name, exec);
+    //   }
+    // }
 })(tasks = exports.tasks || (exports.tasks = {}));

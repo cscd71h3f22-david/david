@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.events = exports.EventChain = exports.Event = void 0;
 const node_cron_1 = __importDefault(require("node-cron"));
 const uuid_1 = require("uuid");
-const util_1 = require("./util");
+const timer_1 = require("./timer");
 /**
  * Contain the logic of when to call a task function.
  */
@@ -22,10 +22,10 @@ class Event {
      *
      * @param exec
      */
-    register(exec) {
-        const unregister = this._register(exec);
+    register(task) {
+        const unregister = this._register(task);
         if (this._endTime) {
-            util_1.utils.setTimeout(() => {
+            timer_1.timer.setTimeout(() => {
                 unregister();
             }, this.timeUntilEnd());
         }
@@ -86,9 +86,10 @@ var events;
                 this._startTime = config.startTime;
             }
         }
-        _register(exec) {
+        _register(task) {
+            const exec = task.exec;
             if (this.startTime) {
-                util_1.utils.setTimeout(exec, this.timeUntilStart());
+                timer_1.timer.setTimeout(exec, this.timeUntilStart());
             }
             else {
                 exec();
@@ -105,23 +106,23 @@ var events;
             this._endTime = endTime;
             this.interval = interval;
         }
-        _register(exec) {
+        _register(task) {
+            const exec = task.exec;
             let timeout = null;
-            const createInterval = () => {
-                this.intervalTimer = setInterval(exec, this.interval);
-            };
             if (this.startTime) {
-                timeout = util_1.utils.setTimeout(createInterval, this.timeUntilStart());
+                timeout = timer_1.timer.setTimeout(() => {
+                    this.intervalTimer = setInterval(exec, this.interval);
+                }, this.timeUntilStart());
             }
             else {
-                createInterval();
+                this.intervalTimer = setInterval(exec, this.interval);
             }
             return () => {
                 if (this.intervalTimer) {
                     clearInterval(this.intervalTimer);
                 }
                 else if (timeout) {
-                    util_1.utils.clearTimeout(timeout);
+                    timer_1.timer.clearTimeout(timeout);
                 }
             };
         }
@@ -132,17 +133,18 @@ var events;
             super({ startTime, endTime });
             this.cron = cron;
         }
-        _register(exec) {
+        _register(task) {
+            const exec = task.exec;
             const cronTask = node_cron_1.default.schedule(this.cron, exec, {
                 scheduled: !!this.startTime
             });
             let timeout;
             if (this.startTime) {
-                timeout = util_1.utils.setTimeout(() => cronTask.start(), this.timeUntilStart());
+                timeout = timer_1.timer.setTimeout(() => cronTask.start(), this.timeUntilStart());
             }
             return () => {
                 if (timeout) {
-                    util_1.utils.clearTimeout(timeout);
+                    timer_1.timer.clearTimeout(timeout);
                 }
                 else {
                     cronTask.stop();
@@ -152,16 +154,62 @@ var events;
     }
     events.CronEvent = CronEvent;
     class OnchainEvent extends Event {
-        constructor({ contract, eventName, startTime, endTime }) {
-            super({ startTime, endTime });
-            this.contract = contract;
-            this.eventName = eventName;
+        constructor(config) {
+            super({ startTime: config.startTime, endTime: config.endTime });
+            this.config = config;
+            this.contracts = [];
+            /**
+             * block number => (combId + txIndx) []
+             */
+            this.eventRecords = new Map();
         }
-        _register(exec) {
-            this.contract.on(this.eventName, exec);
-            return () => {
-                this.contract.removeListener(this.eventName, exec);
+        /**
+         * Inject providers into the Event object.
+         * @param providers
+         */
+        setProviders(providers) {
+            const { contract } = this.config;
+            this.contracts = providers.map(provider => contract.toEthersContract(provider));
+        }
+        get providerName() {
+            return this.config.providerName;
+        }
+        _register(task) {
+            const combineId = (0, uuid_1.v4)();
+            const exec = (...args) => {
+                const chainEv = args[args.length - 1];
+                if (!this.eventAlreadyTriggered(chainEv, combineId)) {
+                    task.exec(...args);
+                }
             };
+            for (const contract of this.contracts) {
+                contract.on(this.config.eventName, exec);
+            }
+            return () => {
+                for (const contract of this.contracts) {
+                    contract.removeListener(this.config.eventName, exec);
+                }
+            };
+        }
+        eventAlreadyTriggered(event, combId) {
+            const eventRecords = this.eventRecords.get(event.blockNumber);
+            const eventIdentifier = `${combId}|${event.transactionHash}|${event.logIndex}`;
+            if (!eventRecords) {
+                // Add event to record
+                this.eventRecords.set(event.blockNumber, [eventIdentifier]);
+                // Remove oldest blocks to save memory
+                if (this.eventRecords.size > 5) {
+                    const oldestBlockNumber = Math.min(...this.eventRecords.keys());
+                    this.eventRecords.delete(oldestBlockNumber);
+                }
+                return false;
+            }
+            for (const record of eventRecords) {
+                if (record === eventIdentifier) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
     events.OnchainEvent = OnchainEvent;
@@ -177,7 +225,8 @@ var events;
         setWebhookServer(webhookServer) {
             this.webhookServer = webhookServer;
         }
-        _register(exec) {
+        _register(task) {
+            const exec = task.exec;
             if (!this.webhookServer) {
                 throw 'Webhook Server not initialized yet.';
             }

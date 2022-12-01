@@ -106,72 +106,81 @@ dave.start();
 ### Full Examples
 #### Javascript
 ```js
-import ethers from "ethers";
+import { ethers } from "ethers";
+import dotenv from "dotenv";
+dotenv.config();
+
+import EchoABI from "./ABI.json" assert { "type": "json" };
 import david from "david-bot";
-import fundAAbi from "./fundA_abi.json" assert { type: "json" };
 
-const getTestnetProvider = () =>
-  new ethers.providers.JsonRpcProvider(
-    "https://rpc.ankr.com/eth_goerli"
-  );
-
-const fundAContract = new ethers.Contract(
-  "0xA3b81CF9bf1D18C85C1Bf25d15361CF9A788BA3b",
-  fundAAbi,
-  getTestnetProvider()
+const provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER_URL);
+const brokenProvider = new ethers.providers.JsonRpcProvider(
+  process.env.DEAD_PROVIDER_URL
 );
 
-const depositToFundA = new david.default.tasks.Task("Deposit to fund A", () => {
-  // Deposit to fund A.
-  console.log("Deposited 100000 Wei to fund contract");
-});
-
-const someoneVotedOnFundA = new david.default.events.OnchainEvent({
-  contract: fundAContract,
-  eventName: "Vote",
-});
+const echoContract = new david.default.Contract(
+  "0x7FF8982B3e3135f46DB12E17BaD5b8d9E1a08c54",
+  EchoABI
+);
 
 const dave = new david.default.David();
 
-dave.on(someoneVotedOnFundA, depositToFundA);
+const getCurrentTime = () =>
+  new Date().toLocaleString("en-CA", { timeZone: "America/New_York" });
+const log = (...args) => console.log(`${getCurrentTime()}`, ...args);
 
-dave.start();
+const echoEventFired = new david.default.events.OnchainEvent({
+  contract: echoContract,
+  eventName: "EchoEvent",
+  providerName: "goerli",
+});
+
+const logEvent = new david.default.tasks.Task("Log Event Data", (...args) => {
+  log(`Event heard: [${args[0]}]`);
+});
+
+dave
+  .registerProvider("goerli", provider)
+  .registerProvider("broken", brokenProvider)
+  .on(echoEventFired, logEvent)
+  .start();
 ```
 #### Typescript
-```js
+```ts
 import { ethers } from "ethers";
-import david  from "david-bot";
-import fundAAbi from "./fundA_abi.json";
+import dotenv from "dotenv";
+dotenv.config();
 
-const getTestnetProvider = () =>
-  new ethers.providers.JsonRpcProvider(
-    "https://rpc.ankr.com/eth_goerli"
-  );
+import EchoABI from "./ABI.json";
+import david from "david-bot";
 
-const fundAContract = new ethers.Contract(
-  "0xA3b81CF9bf1D18C85C1Bf25d15361CF9A788BA3b",
-  fundAAbi,
-  getTestnetProvider()
+const provider = new ethers.providers.JsonRpcProvider(
+  process.env.PROVIDER_URL!
 );
 
-const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {
-  // Deposit to fund A.
-  console.log("Deposited 100000 Wei to fund contract");
-});
-
-const someoneVotedOnFundA = new david.events.OnchainEvent({
-  contract: fundAContract,
-  eventName: "Vote",
-});
+const echoContract = new david.Contract(
+  "0x7FF8982B3e3135f46DB12E17BaD5b8d9E1a08c54",
+  EchoABI
+);
 
 const dave = new david.David();
 
-dave.on(someoneVotedOnFundA, depositToFundA);
+const getCurrentTime = () =>
+  new Date().toLocaleString("en-CA", { timeZone: "America/New_York" });
+const log = (...args: any[]) => console.log(`${getCurrentTime()}`, ...args);
 
-console.log(dave);
-dave.start();
+const echoEventFired = new david.events.OnchainEvent({
+  contract: echoContract,
+  eventName: "EchoEvent",
+  providerName: "goerli",
+});
+
+const logEvent = new david.tasks.Task("Log Event Data", (...args) => {
+  log(`Event heard: [${args[0]}]`);
+});
+
+dave.registerProvider("goerli", provider).on(echoEventFired, logEvent).start();
 ```
-
 
 ### Dev Notes
 

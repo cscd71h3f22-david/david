@@ -1,5 +1,5 @@
-import { ethers } from "ethers";
-import { TaskFn } from "./task";
+import { Contract, EthersProvider } from "./utils";
+import { tasks } from "./task";
 import { WebhookServer, WebhookVerifier } from "./webhooks";
 type UnregisterFn = () => void;
 type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
@@ -21,7 +21,7 @@ export declare abstract class Event {
      *
      * @param exec
      */
-    register(exec: TaskFn): void;
+    register(task: tasks.Task): void;
     /**
      * @returns time (in ms) until the event started. 0 if the event has already started.
      */
@@ -39,7 +39,7 @@ export declare abstract class Event {
      * @param exec The function to be executed upon trigger.
      * @returns UnregisterFn: A function to be called at this.endTime.
      */
-    protected abstract _register(exec: TaskFn): UnregisterFn;
+    protected abstract _register(task: tasks.Task): UnregisterFn;
 }
 /**
  * Allows the user to chain events together using .or()
@@ -55,7 +55,7 @@ export declare class EventChain {
 export declare namespace events {
     export class OnceEvent extends Event {
         constructor(config: OnceEventConfig);
-        protected _register(exec: TaskFn): UnregisterFn;
+        protected _register(task: tasks.Task): UnregisterFn;
     }
     interface IntervalEventConfig extends EventConfigBase {
         interval: number;
@@ -64,7 +64,7 @@ export declare namespace events {
         readonly interval: number;
         private intervalTimer;
         constructor({ startTime, endTime, interval }: IntervalEventConfig);
-        protected _register(exec: TaskFn): UnregisterFn;
+        protected _register(task: tasks.Task): UnregisterFn;
     }
     interface CronEventConfig extends EventConfigBase {
         cron: string;
@@ -72,17 +72,29 @@ export declare namespace events {
     export class CronEvent extends Event {
         readonly cron: string;
         constructor({ startTime, endTime, cron }: CronEventConfig);
-        protected _register(exec: TaskFn): UnregisterFn;
+        protected _register(task: tasks.Task): UnregisterFn;
     }
     interface OnchainEventConfig extends EventConfigBase {
+        providerName: string;
+        contract: Contract;
         eventName: string;
-        contract: ethers.Contract;
     }
     export class OnchainEvent extends Event {
-        readonly contract: ethers.Contract;
-        readonly eventName: string;
-        constructor({ contract, eventName, startTime, endTime }: OnchainEventConfig);
-        protected _register(exec: TaskFn): UnregisterFn;
+        private config;
+        private contracts;
+        /**
+         * block number => (combId + txIndx) []
+         */
+        private eventRecords;
+        constructor(config: OnchainEventConfig);
+        /**
+         * Inject providers into the Event object.
+         * @param providers
+         */
+        setProviders(providers: EthersProvider[]): void;
+        get providerName(): string;
+        protected _register(task: tasks.Task): UnregisterFn;
+        private eventAlreadyTriggered;
     }
     interface WebhookEventConfig extends EventConfigBase {
         eventName: string;
@@ -98,7 +110,7 @@ export declare namespace events {
         readonly method: string;
         constructor({ eventName, startTime, endTime, verifier, path, method }: WebhookEventConfig);
         setWebhookServer(webhookServer: WebhookServer): void;
-        protected _register(exec: TaskFn): UnregisterFn;
+        protected _register(task: tasks.Task): UnregisterFn;
     }
     export type EventConfig = OnceEventConfig | IntervalEventConfig | CronEventConfig | OnchainEventConfig;
     export {};
