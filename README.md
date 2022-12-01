@@ -103,7 +103,8 @@ dave.on(
 dave.start();
 ```
 
-### Full Example (Javascript)
+### Full Examples
+#### Javascript
 ```js
 import ethers from "ethers";
 import david from "david-bot";
@@ -134,6 +135,40 @@ const dave = new david.default.David();
 
 dave.on(someoneVotedOnFundA, depositToFundA);
 
+dave.start();
+```
+#### Typescript
+```js
+import { ethers } from "ethers";
+import david  from "david-bot";
+import fundAAbi from "./fundA_abi.json";
+
+const getTestnetProvider = () =>
+  new ethers.providers.JsonRpcProvider(
+    "https://rpc.ankr.com/eth_goerli"
+  );
+
+const fundAContract = new ethers.Contract(
+  "0xA3b81CF9bf1D18C85C1Bf25d15361CF9A788BA3b",
+  fundAAbi,
+  getTestnetProvider()
+);
+
+const depositToFundA = new david.tasks.Task("Deposit to fund A", () => {
+  // Deposit to fund A.
+  console.log("Deposited 100000 Wei to fund contract");
+});
+
+const someoneVotedOnFundA = new david.events.OnchainEvent({
+  contract: fundAContract,
+  eventName: "Vote",
+});
+
+const dave = new david.David();
+
+dave.on(someoneVotedOnFundA, depositToFundA);
+
+console.log(dave);
 dave.start();
 ```
 
