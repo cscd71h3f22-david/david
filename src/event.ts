@@ -232,7 +232,7 @@ export namespace events {
       const exec = (...args: any[]) => {
         const chainEv: ethers.Event = args[args.length - 1];
         if (!this.eventAlreadyTriggered(chainEv, combineId)) {
-          exec(args);
+          task.exec(args);
         }
       }
 
@@ -249,7 +249,7 @@ export namespace events {
 
     private eventAlreadyTriggered(event: ethers.Event, combId: string): boolean {
       const eventRecords = this.eventRecords.get(event.blockNumber);
-      const eventIdentifier = `${combId}|${event.transactionIndex}`;
+      const eventIdentifier = `${combId}|${event.transactionHash}|${event.logIndex}`;
 
       if (!eventRecords) {
         // Add event to record
