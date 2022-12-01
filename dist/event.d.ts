@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { TaskFn } from "./task";
-import { WebhookServer } from "./webhooks";
+import { WebhookServer, WebhookVerifier } from "./webhooks";
 type UnregisterFn = () => void;
 type OnceEventConfig = Omit<EventConfigBase, 'endTime'> | void;
 interface EventConfigBase {
@@ -11,6 +11,7 @@ interface EventConfigBase {
  * Contain the logic of when to call a task function.
  */
 export declare abstract class Event {
+    readonly id: string;
     protected _startTime?: Date;
     protected _endTime?: Date;
     constructor(config: EventConfigBase);
@@ -85,11 +86,17 @@ export declare namespace events {
     }
     interface WebhookEventConfig extends EventConfigBase {
         eventName: string;
+        verifier: WebhookVerifier;
+        path: string;
+        method: string;
     }
     export class WebhookEvent extends Event {
         webhookServer: WebhookServer | undefined;
         readonly name: string;
-        constructor({ eventName, startTime, endTime }: WebhookEventConfig);
+        readonly verifier: WebhookVerifier;
+        readonly path: string;
+        readonly method: string;
+        constructor({ eventName, startTime, endTime, verifier, path, method }: WebhookEventConfig);
         setWebhookServer(webhookServer: WebhookServer): void;
         protected _register(exec: TaskFn): UnregisterFn;
     }

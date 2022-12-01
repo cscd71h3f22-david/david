@@ -13,7 +13,6 @@ class David {
      * @param config configuration settings for David
      */
     constructor(config) {
-        this.tasks = [];
         this.eventToTasks = new Map();
         if (config) {
             const { webhook } = config;
@@ -25,6 +24,7 @@ class David {
      * webhooks.
      */
     start() {
+        var _a;
         if (this.webhook) {
             this.webhookServer = new webhooks_1.WebhookServer(this.webhook);
         }
@@ -37,7 +37,7 @@ class David {
             }
         }
         if (this.webhook) {
-            this.webhookServer.start();
+            (_a = this.webhookServer) === null || _a === void 0 ? void 0 : _a.start();
         }
         console.log('David started!');
     }
@@ -62,6 +62,12 @@ class David {
             // First parameter is an event chain
             let events = eventOrChain.events;
             for (const event of events) {
+                this.on(event, task);
+            }
+        }
+        else if (eventOrChain instanceof Array) {
+            // First parameter is Event[]
+            for (const event of eventOrChain) {
                 this.on(event, task);
             }
         }

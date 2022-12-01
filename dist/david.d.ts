@@ -14,7 +14,6 @@ interface DavidConfig {
 export declare class David {
     private webhook?;
     private webhookServer?;
-    private tasks;
     private eventToTasks;
     /**
      * Creates an instance of David
@@ -32,6 +31,6 @@ export declare class David {
      * @param task Task to run when this event is emitted
      * @returns instance of David
      */
-    on(eventOrChain: Event | EventChain, task: tasks.Task): David;
+    on(eventOrChain: Event | EventChain | Event[], task: tasks.Task): David;
 }
 export {};
