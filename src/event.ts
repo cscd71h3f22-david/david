@@ -118,7 +118,7 @@ export namespace events {
   
     protected _register(exec: TaskFn): UnregisterFn {
       if (this.startTime) {
-        setTimeout(exec, this.timeUntilStart())
+        utils.setTimeout(exec, this.timeUntilStart());
       } else {
         exec();
       }
@@ -144,10 +144,14 @@ export namespace events {
   
     protected _register(exec: TaskFn): UnregisterFn {
       let timeout: utils.Timeout | null = null;
+      const createInterval = () => {
+        this.intervalTimer = setInterval(exec, this.interval);
+      }
+
       if (this.startTime) {
-        timeout = utils.setTimeout(() => {
-          this.intervalTimer = setInterval(exec, this.interval);
-        }, this.timeUntilStart());
+        timeout = utils.setTimeout(createInterval, this.timeUntilStart());
+      } else {
+        createInterval();
       }
       
       return () => {
