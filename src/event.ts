@@ -232,7 +232,7 @@ export namespace events {
       const exec = (...args: any[]) => {
         const chainEv: ethers.Event = args[args.length - 1];
         if (!this.eventAlreadyTriggered(chainEv, combineId)) {
-          task.exec(args);
+          task.exec(...args);
         }
       }
 

@@ -38,12 +38,17 @@ const yellToEcho = new david.tasks.Task(
   }
 );
 
-const echoEventFired = new david.events.OnchainEvent({contract: echoContract, eventName: 'EchoEvent'});
+const echoEventFired = new david.events.OnchainEvent({
+  contract: new david.Contract(echoContract.address, echoContract.interface), 
+  eventName: 'EchoEvent', 
+  providerName:'goerli'});
+
 const logEvent = new david.tasks.Task('Log Event Data', (...args) => {
   log(`Event heard: [${args[0]}]`);
 });
 
 dave
-  .on([rightNow, interval5Min], yellToEcho)
+  .registerProvider('goerli', provider)
+  // .on([rightNow, interval5Min], yellToEcho)
   .on(echoEventFired, logEvent)
   .start();
