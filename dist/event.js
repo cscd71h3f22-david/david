@@ -5,11 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.events = exports.EventChain = exports.Event = void 0;
 const node_cron_1 = __importDefault(require("node-cron"));
+const uuid_1 = require("uuid");
+const util_1 = require("./util");
 /**
  * Contain the logic of when to call a task function.
  */
 class Event {
     constructor(config) {
+        this.id = (0, uuid_1.v4)();
         this._startTime = config.startTime;
         this._endTime = config.endTime;
     }
@@ -22,7 +25,7 @@ class Event {
     register(exec) {
         const unregister = this._register(exec);
         if (this._endTime) {
-            setTimeout(() => {
+            util_1.utils.setTimeout(() => {
                 unregister();
             }, this.timeUntilEnd());
         }
@@ -85,7 +88,7 @@ var events;
         }
         _register(exec) {
             if (this.startTime) {
-                setTimeout(exec, this.timeUntilStart());
+                util_1.utils.setTimeout(exec, this.timeUntilStart());
             }
             else {
                 exec();
@@ -104,17 +107,21 @@ var events;
         }
         _register(exec) {
             let timeout = null;
+            const createInterval = () => {
+                this.intervalTimer = setInterval(exec, this.interval);
+            };
             if (this.startTime) {
-                timeout = setTimeout(() => {
-                    this.intervalTimer = setInterval(exec, this.interval);
-                }, this.timeUntilStart());
+                timeout = util_1.utils.setTimeout(createInterval, this.timeUntilStart());
+            }
+            else {
+                createInterval();
             }
             return () => {
                 if (this.intervalTimer) {
                     clearInterval(this.intervalTimer);
                 }
                 else if (timeout) {
-                    clearTimeout(timeout);
+                    util_1.utils.clearTimeout(timeout);
                 }
             };
         }
@@ -131,11 +138,11 @@ var events;
             });
             let timeout;
             if (this.startTime) {
-                timeout = setTimeout(() => cronTask.start(), this.timeUntilStart());
+                timeout = util_1.utils.setTimeout(() => cronTask.start(), this.timeUntilStart());
             }
             return () => {
                 if (timeout) {
-                    clearTimeout(timeout);
+                    util_1.utils.clearTimeout(timeout);
                 }
                 else {
                     cronTask.stop();
@@ -159,10 +166,13 @@ var events;
     }
     events.OnchainEvent = OnchainEvent;
     class WebhookEvent extends Event {
-        constructor({ eventName, startTime, endTime }) {
+        constructor({ eventName, startTime, endTime, verifier, path, method }) {
             super({ startTime, endTime });
             this.webhookServer = undefined;
             this.name = eventName;
+            this.verifier = verifier;
+            this.path = path;
+            this.method = method;
         }
         setWebhookServer(webhookServer) {
             this.webhookServer = webhookServer;
@@ -171,9 +181,10 @@ var events;
             if (!this.webhookServer) {
                 throw 'Webhook Server not initialized yet.';
             }
-            this.webhookServer.registerEvent(this.name, exec);
+            this.webhookServer.registerEvent(this, exec);
             return () => {
-                this.webhookServer.removeEvent(this.name);
+                var _a;
+                (_a = this.webhookServer) === null || _a === void 0 ? void 0 : _a.removeEvent(this);
             };
         }
     }

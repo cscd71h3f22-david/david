@@ -119,7 +119,7 @@ export namespace events {
     protected _register(task: tasks.Task): UnregisterFn {
       const exec = task.exec;
       if (this.startTime) {
-        setTimeout(exec, this.timeUntilStart())
+        utils.setTimeout(exec, this.timeUntilStart());
       } else {
         exec();
       }
@@ -150,6 +150,8 @@ export namespace events {
         timeout = timer.setTimeout(() => {
           this.intervalTimer = setInterval(exec, this.interval);
         }, this.timeUntilStart());
+      } else {
+        this.intervalTimer = setInterval(exec, this.interval);
       }
       
       return () => {
