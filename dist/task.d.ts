@@ -1,4 +1,4 @@
-export type TaskFn = <T extends any[]>(...args: T) => void;
+export type TaskFn = <T extends any[]>(...args: T) => void | Promise<void>;
 export declare namespace tasks {
     /**
      * Contain the task to be executed when an event is triggered.
