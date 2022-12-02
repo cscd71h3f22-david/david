@@ -43,8 +43,11 @@ const echoEventFired = new david.events.OnchainEvent({
   eventName: 'EchoEvent', 
   providerName:'goerli'});
 
-const logEvent = new david.tasks.Task('Log Event Data', (...args) => {
+const logEvent = new david.tasks.Task('Log Event Data', async (...args) => {
   log(`Event heard: [${args[0]}]`);
+  const tx = await echoContract.connect(signer).echo(`${counter}`);
+    log(`Echoed [${counter}]. Tx hsah ${tx.hash}`);
+    counter ++;
 });
 
 dave
