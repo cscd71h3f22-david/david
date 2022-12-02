@@ -1,4 +1,5 @@
-# david
+# david-bot
+https://www.npmjs.com/package/david-bot
 
 - Supports modern JavaScript and TypeScript
 - Automation of events over the Ethereum blockchain
@@ -22,7 +23,7 @@
 ##### Installation
 
 ```
-npm install david
+npm install david-bot
 ```
 
 ##### Project Setup
