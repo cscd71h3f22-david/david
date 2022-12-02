@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import {v4 as uuidv4} from 'uuid';
 
-export type TaskFn = <T extends any[]>(...args: T) => void;
+export type TaskFn = <T extends any[]>(...args: T) => void | Promise<void>;
 
 export namespace tasks {
   
@@ -16,9 +16,9 @@ export namespace tasks {
       public readonly name: string,
       exec: TaskFn,
     ) {
-      this.exec = (...args: any[]) => {
+      this.exec = async (...args: any[]) => {
         try {
-          exec(...args);
+          await exec(...args);
         } catch (e) {
           console.error(`Task id=${this.id} name=${this.name} failed with error:`);
           console.error(e);
