@@ -5,7 +5,7 @@
   - Customizable event triggers and actions
   - Webhook support
 
-
+https://www.npmjs.com/package/david-bot
 
 #### Key Terms
 
@@ -22,7 +22,7 @@
 ##### Installation
 
 ```
-npm install david
+npm install david-bot
 ```
 
 ##### Project Setup
