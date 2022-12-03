@@ -21,6 +21,7 @@ const fundBContract = new ethers.Contract(
 const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, getTestnetProvider());
 /**
  * This example deposits into fund B whenever the user likes an Elon Musk tweet.
+ * See https://developer.twitter.com/en/docs/twitter-api/enterprise/account-activity-api/guides/getting-started-with-webhooks
  */
 
 const customEndpoints = express.Router();

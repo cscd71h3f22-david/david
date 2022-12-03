@@ -13,8 +13,8 @@ class David {
      * @param config configuration settings for David
      */
     constructor(config) {
-        this.tasks = [];
         this.eventToTasks = new Map();
+        this.providers = new Map();
         if (config) {
             const { webhook } = config;
             this.webhook = webhook;
@@ -25,6 +25,7 @@ class David {
      * webhooks.
      */
     start() {
+        var _a;
         if (this.webhook) {
             this.webhookServer = new webhooks_1.WebhookServer(this.webhook);
         }
@@ -32,12 +33,20 @@ class David {
             if (this.webhook && event instanceof event_1.events.WebhookEvent) {
                 event.setWebhookServer(this.webhookServer);
             }
+            else if (event instanceof event_1.events.OnchainEvent) {
+                const providerName = event.providerName;
+                const eventProviders = this.providers.get(providerName);
+                if (eventProviders === undefined) {
+                    throw new Error(`Provider named ${providerName} doesn't exist. Please register your providers using David.registerProvider().`);
+                }
+                event.setProviders(eventProviders);
+            }
             for (const task of tasks) {
-                event.register(task.exec);
+                event.register(task);
             }
         }
         if (this.webhook) {
-            this.webhookServer.start();
+            (_a = this.webhookServer) === null || _a === void 0 ? void 0 : _a.start();
         }
         console.log('David started!');
     }
@@ -45,7 +54,7 @@ class David {
      * Adds event and task to David
      * @param eventOrChain Event associated with the task
      * @param task Task to run when this event is emitted
-     * @returns instance of David
+     * @returns the David Object
      */
     on(eventOrChain, task) {
         if (eventOrChain instanceof event_1.Event) {
@@ -64,6 +73,23 @@ class David {
             for (const event of events) {
                 this.on(event, task);
             }
+        }
+        else if (eventOrChain instanceof Array) {
+            // First parameter is Event[]
+            for (const event of eventOrChain) {
+                this.on(event, task);
+            }
+        }
+        return this;
+    }
+    registerProvider(name, providers) {
+        providers = providers instanceof Array ? providers : [providers];
+        if (this.providers.has(name)) {
+            providers = this.providers.get(name).concat(providers);
+            this.providers.set(name, providers);
+        }
+        else {
+            this.providers.set(name, providers);
         }
         return this;
     }

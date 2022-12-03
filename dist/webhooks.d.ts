@@ -1,25 +1,36 @@
 /// <reference types="node" />
+import express from 'express';
+import { events } from './event';
 import { TaskFn } from './task';
 export interface HttpsConfig {
     key: Buffer;
     cert: Buffer;
 }
 export interface WebhookConfig {
+    homepage?: boolean;
     port?: number;
     apiKey: string;
     httpsConfig?: HttpsConfig;
+    /**
+     *
+     * Careful not to override webhook endpoints.
+     */
+    customEndpoints?: express.Router;
 }
+export type WebhookVerifier = (req: express.Request) => boolean | Promise<boolean>;
 export declare class WebhookServer {
     private readonly apiKey;
     private readonly port;
     private readonly app;
     private readonly httpsConfig;
-    private webhookEventToTask;
+    readonly webhookEventToTask: Map<events.WebhookEvent, TaskFn[]>;
+    private readonly homepage;
+    private readonly customEndpoints;
     /**
      *
      * @param param0 Webhook Configurations
      */
-    constructor({ apiKey, port, httpsConfig }: WebhookConfig);
+    constructor({ apiKey, port, httpsConfig, homepage, customEndpoints }: WebhookConfig);
     /**
      * Returns an application built with webhook events
      * @returns a web application built with express
@@ -30,19 +41,14 @@ export declare class WebhookServer {
      */
     start(): void;
     /**
-     * Returns updated mapping with event ids to tasks
-     * @returns maps such that event id -> task
-     */
-    getTaskMapping(): Map<string, TaskFn[]>;
-    /**
      * Add a task to a given webhook event
      * @param eventName event name to add a task to
      * @param task task to execute
      */
-    registerEvent(eventName: string, task: TaskFn): void;
+    registerEvent(event: events.WebhookEvent, task: TaskFn): void;
     /**
      * Remove event from the set
-     * @param eventName event name to remove
+     * @param event event to remove
      */
-    removeEvent(eventName: string): void;
+    removeEvent(event: events.WebhookEvent): void;
 }
