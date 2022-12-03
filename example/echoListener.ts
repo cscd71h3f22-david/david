@@ -1,5 +1,5 @@
 /**
- * Listens to the echo contract
+ * Listens to the echo contract on goerli at 0x7FF8982B3e3135f46DB12E17BaD5b8d9E1a08c54
  */
  import { ethers } from 'ethers';
  import dotenv from 'dotenv'; 

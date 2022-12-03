@@ -1,5 +1,5 @@
 /**
- * Emits an echo to a goerli Echo contract every 5 minutes. 
+ * Emits an echo to a goerli Echo contract at 0x7FF8982B3e3135f46DB12E17BaD5b8d9E1a08c54 every 5 minutes. 
  * When an EchoEvent is emitted by such contract, print to log. 
  */
 import { ethers } from 'ethers';
@@ -46,7 +46,7 @@ const echoEventFired = new david.events.OnchainEvent({
 const logEvent = new david.tasks.Task('Log Event Data', async (...args) => {
   log(`Event heard: [${args[0]}]`);
   const tx = await echoContract.connect(signer).echo(`${counter}`);
-    log(`Echoed [${counter}]. Tx hsah ${tx.hash}`);
+    log(`Echoed [${counter}]. Tx hash ${tx.hash}`);
     counter ++;
 });
 
